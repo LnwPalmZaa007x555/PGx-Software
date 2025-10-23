@@ -1,149 +1,182 @@
+/* ===================== BASE LAYOUT ===================== */
 .container {
   padding: 4rem;
   background: #eaf9e7;
   min-height: 100vh;
-  font-family: Arial, sans-serif;
+  font-family: "Inter", Arial, sans-serif;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 .title {
-  font-size: 1.6rem;
-  font-weight: bold;
+  font-size: 1.7rem;
+  font-weight: 700;
   color: #013237;
+  margin-bottom: 0.3rem;
 }
 
 .subtitle {
   font-size: 1rem;
   color: #4ca771;
+  margin-bottom: 1.8rem;
+}
+
+/* ===================== TOP CONTROLS ===================== */
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
   margin-bottom: 1.5rem;
 }
 
-.empty {
-  color: #666;
-  font-style: italic;
-}
-
-/* Search bar */
 .searchBar {
-  margin-bottom: 1.5rem;
-  max-width: 400px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .searchInput {
-  width: 100%;
   padding: 0.6rem 0.8rem;
   border: 1px solid #ccc;
   border-radius: 6px;
-  font-size: 0.9rem;
-  background-color: #fff;
+  width: 240px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: 0.2s;
 }
 
 .searchInput:focus {
-  outline: none;
   border-color: #4ca771;
   box-shadow: 0 0 0 2px rgba(76, 167, 113, 0.2);
-  color: #000000;
 }
 
-.tableWrapper {
-  overflow-x: auto;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+.searchButton {
+  background: #4ca771;
+  border: none;
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.searchButton:hover {
+  background: #000000;
+}
+
+
+/* ===================== TABLE ===================== */
+.tableBox {
   background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+  padding: 1rem 1.2rem;
+  overflow-x: auto;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
+  font-size: 0.95rem;
 }
 
 .table th {
-  background: #c0e6ba;
   text-align: left;
-  padding: 0.75rem;
-  font-size: 0.9rem;
-  border-bottom: 2px solid #4ca771;
   color: #013237;
+  border-bottom: 2px solid #4ca771;
+  padding: 12px 10px;
+  white-space: nowrap;
 }
 
 .table td {
-  padding: 0.6rem;
-  border-bottom: 1px solid #e0e0e0;
-  font-size: 0.9rem;
-  color: #013237;
+  padding: 10px;
+  border-bottom: 1px solid #dcdcdc;
+  vertical-align: middle;
 }
 
-.table tr:hover {
-  background: #f7fafc;
+/* ============ NAME CELL + EXPORT BUTTON ============ */
+.nameCell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 500;
 }
 
-.exportButton {
-  background: #4ca771;
-  color: white;
-  padding: 0.4rem 0.8rem;
+.exportBtnSmall {
+  background-color: #4ca771;
+  color: #fff;
   border: none;
   border-radius: 6px;
-  cursor: pointer;
   font-size: 0.85rem;
-  font-weight: bold;
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
-.exportButton:hover {
-  background: #3a8e60;
+.exportBtnSmall:hover {
+  background-color: #3f8e62;
 }
 
+/* ===================== STATUS BADGE ===================== */
+.statusApproved {
+  background: #2b9348;
+  color: #fff;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+  display: inline-block;
+}
+
+/* ===================== DARK MODE ===================== */
 :global(html.dark) .container {
   background: #0d1117;
-  color: #e6edf3;
+  color: #fafafa;
 }
 
 :global(html.dark) .title {
-  color: #e6edf3;
+  color: #ffffff;
 }
 
 :global(html.dark) .subtitle {
-  color: #8b949e;
+  color: #b9c4d0;
 }
 
-:global(html.dark) .empty {
-  color: #8b949e;
-}
-
-:global(html.dark) .searchInput {
-  background-color: #0d1117;
-  color: #e6edf3;
-  border: 1px solid #2a2f35;
-}
-
-:global(html.dark) .searchInput:focus {
-  border-color: #4ca771;
-  box-shadow: 0 0 0 2px rgba(76, 167, 113, 0.3);
-}
-
-:global(html.dark) .tableWrapper {
+:global(html.dark) .tableBox {
   background: #161b22;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  color: #fafafa;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 
 :global(html.dark) .table th {
-  background: #1e242c;
+  color: #ffffff;
   border-bottom: 2px solid #4ca771;
-  color: #e6edf3;
 }
 
 :global(html.dark) .table td {
-  border-bottom: 1px solid #2a2f35;
   color: #e6edf3;
+  border-bottom: 1px solid #2a323d;
 }
 
-:global(html.dark) .table tr:hover {
-  background: #2a323d;
+:global(html.dark) .searchInput {
+  background: #0d1117;
+  border: 1px solid #3a3f45;
+  color: #ffffff;
 }
 
-:global(html.dark) .exportButton {
+:global(html.dark) .searchButton,
+:global(html.dark) .exportBtn,
+:global(html.dark) .pdfBtn,
+:global(html.dark) .exportBtnSmall {
   background: #2f8a5a;
-  color: #fff;
+  color: #ffffff;
 }
 
-:global(html.dark) .exportButton:hover {
-  background: #256349;
+:global(html.dark) .exportBtnSmall:hover {
+  background: #3fae76;
 }

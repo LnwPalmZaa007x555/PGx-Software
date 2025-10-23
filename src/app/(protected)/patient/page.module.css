@@ -147,6 +147,8 @@
 
 .radioInput {
   accent-color: #04ff00;
+  transform: scale(2);
+  margin-right: 10;
 }
 
 .radioGroup label {
@@ -172,10 +174,10 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 0.95rem;
   font-weight: bold;
+  display: flex;
+  align-items: center;
 }
-
 .button:hover {
   background: #3a8e60;
 }

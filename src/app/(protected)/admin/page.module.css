@@ -1,0 +1,336 @@
+.container {
+  padding: 4rem;
+  background: #eaf9e7;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+}
+
+.title {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #013237;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #4ca771;
+  margin-bottom: 1.5rem;
+}
+
+/* Table */
+.tableBox {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  text-align: left;
+  color: #013237;
+  border-bottom: 2px solid #4ca771;
+  padding: 8px;
+}
+
+.table td {
+  padding: 8px;
+  border-bottom: 1px solid #e0e0e0;
+  color: #013237;
+}
+
+.iconBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-left: 0.4rem;
+  color: #013237;
+  transition: 0.2s;
+}
+
+.iconBtn:hover {
+  transform: scale(1.2);
+  color: #4ca771;
+}
+
+/* Add button */
+.addBtn {
+  background: #4ca771;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.addBtn:hover {
+  background: #3a8e5c;
+}
+
+/* Input & Select */
+.input,
+.select {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #4ca771;
+}
+
+/* ===================== MODAL ===================== */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99;
+  padding: 1rem;
+}
+
+/* ✅ modal กะทัดรัด ไม่ยาวเกินจอ */
+.modal {
+  background: #fff;
+  padding: 1.25rem 1.25rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 320px; /* ย่อกว้างลงอีก */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem; /* ลดช่องห่างรวม */
+  align-items: stretch;
+}
+
+/* ✅ ระยะ label แนบช่องกรอกอย่างพอดี */
+.modal label {
+  font-weight: 600;
+  font-size: 0.83rem;
+  color: #013237;
+  margin-bottom: -20; /* ชิดช่องกรอกแบบพอดี UX-friendly */
+  margin-top: 0;
+}
+
+/* ✅ ช่องกรอกเล็กลงและดูแน่นขึ้น */
+.modal input,
+.modal select {
+  width: 100%;
+  padding: 0.4rem 0.65rem;
+  border-radius: 6px;
+  border: 1.2px solid #4ca771;
+  outline: none;
+  font-size: 0.88rem;
+  box-sizing: border-box;
+}
+
+.modal input:focus,
+.modal select:focus {
+  border-color: #2f8c55;
+  box-shadow: 0 0 0 2px rgba(76, 167, 113, 0.25);
+}
+
+/* ✅ ปุ่มขนาดกะทัดรัด */
+.modalButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.saveBtn,
+.cancelBtn {
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: 0.2s;
+}
+
+.saveBtn {
+  background: #4ca771;
+  color: #fff;
+}
+
+.saveBtn:hover {
+  background: #3a8e5c;
+}
+
+.cancelBtn {
+  background: #e0e0e0;
+  color: #013237;
+}
+
+.cancelBtn:hover {
+  background: #cccccc;
+}
+
+/* ✅ เพิ่ม spacing เล็กน้อยใต้หัวข้อหลัก */
+.modal h3 {
+  margin-bottom: 0.6rem;
+}
+
+
+/* 🌙 DARK MODE */
+:global(html.dark) .container {
+  background: #0d1117;
+  color: #e6edf3;
+}
+
+:global(html.dark) .title {
+  color: #e6edf3;
+}
+
+:global(html.dark) .subtitle {
+  color: #8b949e;
+}
+
+:global(html.dark) .tableBox {
+  background: #161b22;
+}
+
+:global(html.dark) .table th {
+  color: #e6edf3;
+  border-bottom: 2px solid #4ca771;
+}
+
+:global(html.dark) .table td {
+  color: #e6edf3;
+  border-bottom: 1px solid #30363d;
+}
+
+:global(html.dark) .iconBtn {
+  color: #e6edf3;
+}
+
+:global(html.dark) .addBtn {
+  background: #238636;
+}
+
+:global(html.dark) .input,
+:global(html.dark) .select {
+  background: #0d1117;
+  color: #e6edf3;
+  border: 1px solid #4ca771;
+}
+
+/* ✅ Dark mode สำหรับ modal */
+:global(html.dark) .modal {
+  background: #0d1117;
+  border: 1px solid #1f6f46;
+  color: #e6edf3;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+}
+
+:global(html.dark) .modal h3,
+:global(html.dark) .modal label {
+  color: #eaf9e7;
+}
+
+:global(html.dark) .modal input,
+:global(html.dark) .modal select {
+  background: #0f1419;
+  border: 1.5px solid #3fb86b;
+  color: #e6edf3;
+}
+
+:global(html.dark) .modal input:focus,
+:global(html.dark) .modal select:focus {
+  border-color: #43d17f;
+  box-shadow: 0 0 0 2px rgba(67, 209, 127, 0.3);
+}
+
+/* Filter bar */
+.filterBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.filterGroup,
+.searchGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.selectSmall {
+  border: 1px solid #4ca771;
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  background: #fff;
+  color: #013237;
+}
+
+.searchInput {
+  border: 1px solid #4ca771;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  outline: none;
+  color: #013237;
+}
+
+.searchInput:focus {
+  border-color: #4ca771;
+}
+
+.formLabel {
+  display: block;
+  text-align: left;
+  font-weight: bold;
+  margin-top: 0.6rem;
+  color: #013237;
+}
+
+.errorText {
+  background: #ffdede;
+  color: #b20000;
+  padding: 0.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+}
+
+/* 🌙 Dark mode */
+:global(html.dark) .selectSmall {
+  background: #161b22;
+  color: #e6edf3;
+  border: 1px solid #4ca771;
+}
+
+:global(html.dark) .searchInput {
+  background: #0d1117;
+  color: #e6edf3;
+  border: 1px solid #4ca771;
+}
+
+:global(html.dark) .formLabel {
+  color: #e6edf3;
+}
+
+:global(html.dark) .errorText {
+  background: #3a0f0f;
+  color: #ff6b6b;
+}

@@ -1,18 +1,14 @@
-// src/app/(protected)/patient/page.tsx
 "use client";
 
 import { usePatients } from "@/context/PatientContext";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search, User, Save } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 import styles from "./page.module.css";
-import { genotypeMappings } from "@/utils/mappings";
-
-type MarkerValues = Record<string, string>;
 
 export default function PatientPage() {
-  const router = useRouter();
   const { patients, addPatient } = usePatients();
+  const { language } = useLanguage();
 
   const [form, setForm] = useState({
     idCard: "",
@@ -23,10 +19,6 @@ export default function PatientPage() {
     phone: "",
     ethnicity: "",
     otherEthnicity: "",
-    gene: "",
-    markerValues: {} as MarkerValues,
-    genotype: "",
-    phenotype: "",
   });
 
   const [searchId, setSearchId] = useState("");
@@ -36,7 +28,13 @@ export default function PatientPage() {
   // ===== Search & Autofill =====
   const handleSearch = () => {
     if (!/^\d{13}$/.test(searchId)) {
-      setErrors((prev) => ({ ...prev, searchId: "ID Card must be 13 digits" }));
+      setErrors((prev) => ({
+        ...prev,
+        searchId:
+          language === "en"
+            ? "ID Card must be 13 digits"
+            : "เลขบัตรประชาชนต้องมี 13 หลัก",
+      }));
       return;
     }
 
@@ -54,8 +52,7 @@ export default function PatientPage() {
         "otherEthnicity",
       ];
 
-      setForm((prev) => ({
-        ...prev,
+      setForm({
         idCard: existing.idCard,
         firstName: existing.firstName,
         lastName: existing.lastName,
@@ -64,20 +61,24 @@ export default function PatientPage() {
         phone: existing.phone,
         ethnicity: existing.ethnicity,
         otherEthnicity: existing.otherEthnicity || "",
-      }));
+      });
 
-      // ล้าง error ของฟิลด์ที่ถูกเติมแล้ว
       setErrors((prev) => {
         const cleared = { ...prev };
         fieldsToFill.concat("searchId").forEach((k) => delete cleared[k]);
         return cleared;
       });
 
-      // ไฮไลท์ฟิลด์ที่ autofill
       setHighlightedFields(fieldsToFill);
-      setTimeout(() => setHighlightedFields([]), 2000); // 2 วิแล้วหาย
+      setTimeout(() => setHighlightedFields([]), 2000);
     } else {
-      setErrors((prev) => ({ ...prev, searchId: "No patient record found" }));
+      setErrors((prev) => ({
+        ...prev,
+        searchId:
+          language === "en"
+            ? "No patient record found"
+            : "ไม่พบข้อมูลผู้ป่วย",
+      }));
     }
   };
 
@@ -94,18 +95,6 @@ export default function PatientPage() {
       return;
     }
 
-    if (name === "gene") {
-      setForm((prev) => ({
-        ...prev,
-        gene: value,
-        markerValues: {},
-        genotype: "",
-        phenotype: "",
-      }));
-      setErrors((prev) => ({ ...prev, gene: "" }));
-      return;
-    }
-
     setForm((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
@@ -115,106 +104,105 @@ export default function PatientPage() {
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const selectedGene =
-    form.gene ? genotypeMappings[form.gene as keyof typeof genotypeMappings] : null;
-
-  const allMarkersSelected = (geneKey: string, values: MarkerValues) => {
-    const gm = genotypeMappings[geneKey as keyof typeof genotypeMappings];
-    if (!gm) return false;
-    return gm.markers.every((m) => values[m.name]);
-  };
-
-  const handleMarkerChange = (markerName: string, value: string) => {
-    const nextMarkerValues = { ...form.markerValues, [markerName]: value };
-    const nextErrors = { ...errors };
-    delete nextErrors[markerName];
-
-    if (form.gene && allMarkersSelected(form.gene, nextMarkerValues)) {
-      const gm = genotypeMappings[form.gene as keyof typeof genotypeMappings];
-      const computedGenotype = gm.mapToGenotype(nextMarkerValues) || "";
-      const phenotype =
-        gm.genotypes.find((g) => g.genotype === computedGenotype)?.phenotype || "";
-
-      setForm((prev) => ({
-        ...prev,
-        markerValues: nextMarkerValues,
-        genotype: computedGenotype,
-        phenotype,
-      }));
-
-      delete nextErrors.genotype;
-      delete nextErrors.phenotype;
-      setErrors(nextErrors);
-    } else {
-      setForm((prev) => ({
-        ...prev,
-        markerValues: nextMarkerValues,
-        genotype: "",
-        phenotype: "",
-      }));
-      setErrors(nextErrors);
-    }
-  };
-
   // ===== Validate =====
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!/^\d{13}$/.test(form.idCard)) newErrors.idCard = "ID Card must be 13 digits";
-    if (!form.firstName) newErrors.firstName = "First name is required";
-    if (!form.lastName) newErrors.lastName = "Last name is required";
-    if (!form.sex) newErrors.sex = "Please select sex";
+    if (!/^\d{13}$/.test(form.idCard))
+      newErrors.idCard =
+        language === "en"
+          ? "ID Card must be 13 digits"
+          : "เลขบัตรประชาชนต้องมี 13 หลัก";
+
+    if (!form.firstName)
+      newErrors.firstName =
+        language === "en" ? "First name is required" : "กรุณากรอกชื่อ";
+
+    if (!form.lastName)
+      newErrors.lastName =
+        language === "en" ? "Last name is required" : "กรุณากรอกนามสกุล";
+
+    if (!form.sex)
+      newErrors.sex =
+        language === "en" ? "Please select sex" : "กรุณาเลือกเพศ";
 
     if (!form.dob) {
-      newErrors.dob = "Date of birth is required";
+      newErrors.dob =
+        language === "en"
+          ? "Date of birth is required"
+          : "กรุณาเลือกวันเดือนปีเกิด";
     } else if (new Date(form.dob) >= new Date()) {
-      newErrors.dob = "Date of birth cannot be today or future";
+      newErrors.dob =
+        language === "en"
+          ? "Date of birth cannot be today or future"
+          : "วันเกิดต้องไม่เป็นวันที่ปัจจุบันหรืออนาคต";
     }
 
-    if (!/^\d{10}$/.test(form.phone)) newErrors.phone = "Phone must be 10 digits";
+    if (!/^\d{10}$/.test(form.phone))
+      newErrors.phone =
+        language === "en"
+          ? "Phone must be 10 digits"
+          : "เบอร์โทรศัพท์ต้องมี 10 หลัก";
 
     if (!form.ethnicity) {
-      newErrors.ethnicity = "Please select ethnicity";
+      newErrors.ethnicity =
+        language === "en"
+          ? "Please select ethnicity"
+          : "กรุณาเลือกเชื้อชาติ";
     } else if (form.ethnicity === "other" && !form.otherEthnicity) {
-      newErrors.otherEthnicity = "Please specify ethnicity";
-    }
-
-    if (!form.gene) newErrors.gene = "Please select gene";
-
-    const selected =
-      form.gene ? genotypeMappings[form.gene as keyof typeof genotypeMappings] : null;
-    if (selected) {
-      selected.markers.forEach((m) => {
-        if (!form.markerValues[m.name]) {
-          newErrors[m.name] = `Please select ${m.name}`;
-        }
-      });
+      newErrors.otherEthnicity =
+        language === "en"
+          ? "Please specify ethnicity"
+          : "กรุณาระบุเชื้อชาติ";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // ===== Submit =====
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
-    let phenotype = form.phenotype;
-    if (form.gene && form.genotype) {
-      const gm = genotypeMappings[form.gene as keyof typeof genotypeMappings];
-      phenotype =
-        gm.genotypes.find((g) => g.genotype === form.genotype)?.phenotype || "";
-    }
+    addPatient({
+      ...form,
+      gene: "",
+      markerValues: {},
+      genotype: "",
+      phenotype: "",
+      status: "pending_gene",
+    });
 
-    addPatient({ ...form, phenotype });
-    router.push("/patient/summary");
+    alert(
+      language === "en"
+        ? "✅ Patient record saved successfully!"
+        : "✅ บันทึกข้อมูลผู้ป่วยเรียบร้อยแล้ว!"
+    );
+
+    setForm({
+      idCard: "",
+      firstName: "",
+      lastName: "",
+      sex: "",
+      dob: "",
+      phone: "",
+      ethnicity: "",
+      otherEthnicity: "",
+    });
   };
 
   // ===== UI =====
   return (
     <form className={styles.container} onSubmit={handleSubmit}>
-      <h1 className={styles.title}>Patient Form</h1>
-      <p className={styles.subtitle}>Add new patient record</p>
+      <h1 className={styles.title}>
+        {language === "en" ? "Patient Form" : "แบบฟอร์มผู้ป่วย"}
+      </h1>
+      <p className={styles.subtitle}>
+        {language === "en"
+          ? "Add new patient record"
+          : "เพิ่มข้อมูลผู้ป่วยใหม่"}
+      </p>
 
       {/* Search Bar */}
       <div className={styles.searchBar}>
@@ -229,22 +217,37 @@ export default function PatientPage() {
             setSearchId(only);
             setErrors((prev) => ({ ...prev, searchId: "" }));
           }}
-          placeholder="Search by ID Card (13 digits)"
+          placeholder={
+            language === "en"
+              ? "Search by ID Card (13 digits)"
+              : "ค้นหาด้วยเลขบัตรประชาชน (13 หลัก)"
+          }
           maxLength={13}
         />
-        <button type="button" className={styles.searchButton} onClick={handleSearch}>
+        <button
+          type="button"
+          className={styles.searchButton}
+          onClick={handleSearch}
+        >
           <Search size={18} />
         </button>
       </div>
-      {errors.searchId && <span className={styles.searchError}>{errors.searchId}</span>}
+      {errors.searchId && (
+        <span className={styles.searchError}>{errors.searchId}</span>
+      )}
 
       {/* Patient Info */}
       <div className={styles.section}>
-        <h2 className={styles.sectionTitle}>Patient Information</h2>
+        <h2 className={styles.sectionTitle}>
+          <User size={18} color="#4CA771" style={{ marginRight: 6 }} />
+          {language === "en" ? "Patient Information" : "ข้อมูลผู้ป่วย"}
+        </h2>
 
         {/* ID Card */}
         <div className={styles.field}>
-          <label className={styles.label}>ID Card</label>
+          <label className={styles.label}>
+            {language === "en" ? "ID Card" : "เลขบัตรประชาชน"}
+          </label>
           <input
             type="text"
             className={`${styles.input} ${
@@ -253,46 +256,66 @@ export default function PatientPage() {
             name="idCard"
             value={form.idCard}
             onChange={handleChange}
-            placeholder="ID Card (13 digits)"
+            placeholder={
+              language === "en"
+                ? "ID Card (13 digits)"
+                : "เลขบัตรประชาชน (13 หลัก)"
+            }
             maxLength={13}
           />
-          {errors.idCard && <span className={styles.error}>{errors.idCard}</span>}
+          {errors.idCard && (
+            <span className={styles.error}>{errors.idCard}</span>
+          )}
         </div>
 
         {/* First + Last */}
         <div className={styles.row}>
           <div className={styles.field}>
-            <label className={styles.label}>Firstname</label>
+            <label className={styles.label}>
+              {language === "en" ? "Firstname" : "ชื่อ"}
+            </label>
             <input
               className={`${styles.input} ${
                 errors.firstName ? styles.errorInput : ""
-              } ${highlightedFields.includes("firstName") ? styles.autofilled : ""}`}
+              } ${
+                highlightedFields.includes("firstName") ? styles.autofilled : ""
+              }`}
               name="firstName"
               value={form.firstName}
               onChange={handleChange}
-              placeholder="First Name"
+              placeholder={language === "en" ? "First Name" : "ชื่อ"}
             />
-            {errors.firstName && <span className={styles.error}>{errors.firstName}</span>}
+            {errors.firstName && (
+              <span className={styles.error}>{errors.firstName}</span>
+            )}
           </div>
           <div className={styles.field}>
-            <label className={styles.label}>Lastname</label>
+            <label className={styles.label}>
+              {language === "en" ? "Lastname" : "นามสกุล"}
+            </label>
             <input
               className={`${styles.input} ${
                 errors.lastName ? styles.errorInput : ""
-              } ${highlightedFields.includes("lastName") ? styles.autofilled : ""}`}
+              } ${
+                highlightedFields.includes("lastName") ? styles.autofilled : ""
+              }`}
               name="lastName"
               value={form.lastName}
               onChange={handleChange}
-              placeholder="Last Name"
+              placeholder={language === "en" ? "Last Name" : "นามสกุล"}
             />
-            {errors.lastName && <span className={styles.error}>{errors.lastName}</span>}
+            {errors.lastName && (
+              <span className={styles.error}>{errors.lastName}</span>
+            )}
           </div>
         </div>
 
         {/* DOB + Sex */}
         <div className={styles.row}>
           <div className={styles.field}>
-            <label className={styles.label}>Date of Birth</label>
+            <label className={styles.label}>
+              {language === "en" ? "Date of Birth" : "วันเดือนปีเกิด"}
+            </label>
             <input
               type="date"
               className={`${styles.input} ${styles.dateInput} ${
@@ -306,7 +329,9 @@ export default function PatientPage() {
             {errors.dob && <span className={styles.error}>{errors.dob}</span>}
           </div>
           <div className={styles.field}>
-            <label className={styles.label}>Sex</label>
+            <label className={styles.label}>
+              {language === "en" ? "Sex" : "เพศ"}
+            </label>
             <div className={styles.radioGroup}>
               <label>
                 <input
@@ -316,7 +341,7 @@ export default function PatientPage() {
                   checked={form.sex === "male"}
                   onChange={() => handleRadio("sex", "male")}
                 />
-                Male
+                {language === "en" ? "Male" : "ชาย"}
               </label>
               <label>
                 <input
@@ -326,7 +351,7 @@ export default function PatientPage() {
                   checked={form.sex === "female"}
                   onChange={() => handleRadio("sex", "female")}
                 />
-                Female
+                {language === "en" ? "Female" : "หญิง"}
               </label>
             </div>
             {errors.sex && <span className={styles.error}>{errors.sex}</span>}
@@ -335,7 +360,9 @@ export default function PatientPage() {
 
         {/* Phone */}
         <div className={styles.field}>
-          <label className={styles.label}>Phone</label>
+          <label className={styles.label}>
+            {language === "en" ? "Phone" : "เบอร์โทรศัพท์"}
+          </label>
           <input
             type="text"
             className={`${styles.input} ${
@@ -343,8 +370,16 @@ export default function PatientPage() {
             } ${highlightedFields.includes("phone") ? styles.autofilled : ""}`}
             name="phone"
             value={form.phone}
-            onChange={handleChange}
-            placeholder="Phone (10 digits)"
+            onChange={(e) => {
+              const onlyNums = e.target.value.replace(/\D/g, "").slice(0, 10);
+              setForm((prev) => ({ ...prev, phone: onlyNums }));
+              setErrors((prev) => ({ ...prev, phone: "" }));
+            }}
+            placeholder={
+              language === "en"
+                ? "Phone (10 digits)"
+                : "เบอร์โทรศัพท์ (10 หลัก)"
+            }
             maxLength={10}
           />
           {errors.phone && <span className={styles.error}>{errors.phone}</span>}
@@ -352,7 +387,9 @@ export default function PatientPage() {
 
         {/* Ethnicity */}
         <div className={styles.field}>
-          <label className={styles.label}>Ethnicity</label>
+          <label className={styles.label}>
+            {language === "en" ? "Ethnicity" : "เชื้อชาติ"}
+          </label>
           <div className={styles.radioGroup}>
             <label>
               <input
@@ -362,7 +399,7 @@ export default function PatientPage() {
                 checked={form.ethnicity === "thai"}
                 onChange={() => handleRadio("ethnicity", "thai")}
               />
-              Thai
+              {language === "en" ? "Thai" : "ไทย"}
             </label>
             <label>
               <input
@@ -372,7 +409,7 @@ export default function PatientPage() {
                 checked={form.ethnicity === "other"}
                 onChange={() => handleRadio("ethnicity", "other")}
               />
-              Other
+              {language === "en" ? "Other" : "อื่น ๆ"}
             </label>
           </div>
 
@@ -381,71 +418,34 @@ export default function PatientPage() {
               className={`${styles.input} ${
                 errors.otherEthnicity ? styles.errorInput : ""
               } ${
-                highlightedFields.includes("otherEthnicity") ? styles.autofilled : ""
+                highlightedFields.includes("otherEthnicity")
+                  ? styles.autofilled
+                  : ""
               }`}
               name="otherEthnicity"
               value={form.otherEthnicity}
               onChange={handleChange}
-              placeholder="Specify ethnicity"
+              placeholder={
+                language === "en"
+                  ? "Specify ethnicity"
+                  : "ระบุเชื้อชาติอื่น ๆ"
+              }
             />
           )}
 
-          {errors.ethnicity && <span className={styles.error}>{errors.ethnicity}</span>}
+          {errors.ethnicity && (
+            <span className={styles.error}>{errors.ethnicity}</span>
+          )}
           {errors.otherEthnicity && (
             <span className={styles.error}>{errors.otherEthnicity}</span>
           )}
         </div>
       </div>
 
-      {/* Genetic Info */}
-      <div className={styles.section}>
-        <h2 className={styles.sectionTitle}>Genetic Information</h2>
-
-        <div className={styles.field}>
-          <select
-            className={`${styles.input} ${errors.gene ? styles.errorInput : ""}`}
-            name="gene"
-            value={form.gene}
-            onChange={handleChange}
-          >
-            <option value="">-- Select Gene --</option>
-            {Object.keys(genotypeMappings).map((gene) => (
-              <option key={gene} value={gene}>
-                {gene}
-              </option>
-            ))}
-          </select>
-          {errors.gene && <span className={styles.error}>{errors.gene}</span>}
-        </div>
-
-        {selectedGene &&
-          selectedGene.markers.map((marker) => (
-            <div key={marker.name} className={styles.field}>
-              <label className={styles.label}>
-                {marker.name} {marker.description}
-              </label>
-              <select
-                className={`${styles.input} ${errors[marker.name] ? styles.errorInput : ""}`}
-                value={form.markerValues[marker.name] || ""}
-                onChange={(e) => handleMarkerChange(marker.name, e.target.value)}
-              >
-                <option value="">-- Select --</option>
-                {marker.options.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              {errors[marker.name] && (
-                <span className={styles.error}>{errors[marker.name]}</span>
-              )}
-            </div>
-          ))}
-      </div>
-
       <div className={styles.actions}>
         <button className={styles.button} type="submit">
-          Submit
+          <Save size={18} style={{ marginRight: 6 }} />
+          {language === "en" ? "Save" : "บันทึก"}
         </button>
       </div>
     </form>

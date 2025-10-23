@@ -7,12 +7,22 @@ export type Marker = {
 };
 
 export type GenotypeRow = {
-  /** key ที่มนุษย์อ่านง่าย เช่น "*1/*2" หรือ "C/C | A/A" หรือใส่รายละเอียดตามตาราง */
+  /** key ที่มนุษย์อ่านง่าย เช่น "*1/*2" */
   genotype: string;
-  /** สรุป phenotype */
-  phenotype: string;
-  /** คำแนะนำการรักษา (ภาษาไทยได้) */
-  recommendation: string;
+
+  /** สรุป phenotype (ภาษาเริ่มต้นหรือใช้เมื่อไม่รองรับหลายภาษา) */
+  phenotype?: string;
+
+  /** สรุป phenotype แยกภาษา */
+  phenotype_en?: string;
+  phenotype_th?: string;
+
+  /** คำแนะนำการรักษา (ภาษาเริ่มต้น) */
+  recommendation?: string;
+
+  /** คำแนะนำแยกภาษา */
+  recommendation_en?: string;
+  recommendation_th?: string;
 };
 
 export type GeneMapping = {

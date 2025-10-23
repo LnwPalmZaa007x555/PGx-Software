@@ -1,3 +1,42 @@
+/* ===================== FIX AUTO-FILL BACKGROUND ===================== */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 40px white inset !important;
+  -webkit-text-fill-color: #013237 !important;
+  caret-color: #013237;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* ===================== FIX INPUT WIDTH OVERFLOW ===================== */
+.input {
+  width: calc(100% - 4px); /* ✅ ลดความกว้างลงนิดเพื่อกันล้นขอบ */
+  padding: 18px 12px 8px 12px;
+  border: 1px solid #C0E6BA;
+  border-radius: 6px;
+  font-size: 1rem;
+  background-color: #fff;
+  color: #013237;
+  box-sizing: border-box; /* ✅ ให้ padding รวมในขนาด box */
+}
+
+/* เพิ่มความสมดุลเวลา focus */
+.input:focus {
+  border-color: #4CA771;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(76, 167, 113, 0.25);
+}
+
+/* ✅ บังคับให้ label ลอยขึ้นตอนมี autofill */
+.input:-webkit-autofill + .label {
+  top: 0;
+  transform: translateY(-50%) scale(0.9);
+  font-size: 0.8rem;
+  color: #4CA771;
+}
+
+
 .main {
   display: flex;
   justify-content: center;

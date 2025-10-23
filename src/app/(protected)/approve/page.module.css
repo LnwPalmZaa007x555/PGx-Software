@@ -1,0 +1,298 @@
+.container {
+  padding: 4rem;
+  background: #eaf9e7;
+  min-height: 100vh;
+  font-family: "Inter", Arial, sans-serif;
+}
+
+.title {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #013237;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #4ca771;
+  margin-bottom: 1.5rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.5fr 2fr;
+  gap: 2rem;
+}
+
+.left,
+.right {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ========== Left: Patient List ========== */
+.chartBox {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+  padding: 1.25rem;
+}
+
+.sectionNote {
+  font-size: 0.9rem;
+  color: #4ca771;
+  margin-bottom: 1rem;
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.searchButton {
+  background: #4ca771;
+  border: none;
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.scrollBox {
+  max-height: 400px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.patientCard {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0.8rem;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.patientCard:hover {
+  background: #c0e6ba;
+  border-color: #4ca771;
+}
+
+.selected {
+  border: 2px solid #4ca771;
+  background: #d8f5d1;
+}
+
+.patientName {
+  font-weight: bold;
+  color: #013237;
+}
+
+.patientInfo {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #444;
+  margin-top: 0.2rem;
+}
+
+.statusBadge {
+  background: #f4b400;
+  color: #fff;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ========== Right: Details ========== */
+.detailBox {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+  padding: 1.25rem;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.3rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.geneSection {
+  background: #f8fdf8;
+  padding: 0.8rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.button {
+  border: none;
+  border-radius: 8px;
+  padding: 0.7rem 1.5rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: 0.2s ease;
+  color: #fff;
+}
+
+.approveBtn {
+  background: #2b9348;
+}
+
+.approveBtn:hover {
+  background: #23803e;
+}
+
+.rejectBtn {
+  background: #e55353;
+}
+
+.rejectBtn:hover {
+  background: #cc4444;
+}
+
+.emptyBox {
+  background: #fff;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+}
+
+/* 🌙 Dark Mode */
+/* 🌙 DARK MODE REFINED */
+:global(html.dark) .container {
+  background: #0d1117;
+  color: #fafafa; /* ✅ brighter base text */
+}
+
+:global(html.dark) .title {
+  color: #ffffff; /* ✅ strong headline */
+}
+
+:global(html.dark) .subtitle,
+:global(html.dark) .sectionNote {
+  color: #b9c4d0; /* ✅ muted green-gray text */
+}
+
+:global(html.dark) .chartBox,
+:global(html.dark) .detailBox,
+:global(html.dark) .emptyBox {
+  background: #161b22; /* ✅ dark container base */
+  color: #fafafa;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+:global(html.dark) .patientCard {
+  background: #1d252e;
+  color: #fafafa;
+  border: 1px solid #2f3c45;
+}
+
+:global(html.dark) .patientCard:hover {
+  background: #23362c; /* ✅ subtle hover green tint */
+  border-color: #4ca771;
+}
+
+:global(html.dark) .selected {
+  background: #23362c;
+  border-color: #4ca771;
+}
+
+:global(html.dark) .patientName {
+  color: #ffffff; /* ✅ highlight name */
+}
+
+:global(html.dark) .patientInfo span {
+  color: #b9c4d0; /* ✅ readable gray text */
+}
+
+:global(html.dark) .statusBadge {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* ✅ vivid status colors for dark mode */
+:global(html.dark) .statusPending {
+  background: #f4b400; /* 🟡 yellow */
+  color: #013237;
+}
+
+:global(html.dark) .statusReview {
+  background: #e55353; /* 🔴 red */
+}
+
+:global(html.dark) .statusApproved {
+  background: #2b9348; /* 🟢 green */
+}
+
+:global(html.dark) .input,
+:global(html.dark) .searchInput {
+  background: #0d1117;
+  border: 1px solid #3a3f45;
+  color: #ffffff;
+}
+
+:global(html.dark) .searchButton,
+:global(html.dark) .button {
+  background: #2f8a5a;
+  color: #ffffff;
+}
+
+:global(html.dark) .searchButton:hover,
+:global(html.dark) .button:hover {
+  background: #256349;
+}
+
+:global(html.dark) .approveBtn {
+  background: #2b9348;
+}
+
+:global(html.dark) .rejectBtn {
+  background: #e55353;
+}
+
+:global(html.dark) .approveBtn:hover {
+  background: #23803e;
+}
+
+:global(html.dark) .rejectBtn:hover {
+  background: #cc4444;
+}
+
+/* ✅ FIX: Gene Info Box in Dark Mode */
+:global(html.dark) .geneSection {
+  background: #1d252e; /* เข้มกลืนกับ theme */
+  border: 1px solid #2f3c45; /* เพิ่มกรอบบาง ๆ */
+  color: #fafafa; /* ทำให้ text อ่านง่าย */
+}
+
+:global(html.dark) .geneSection h4 {
+  color: #ffffff; /* ให้หัวข้อเด่นขึ้น */
+}
+
+:global(html.dark) .geneSection p {
+  color: #d1d5db; /* สีเทาอ่อนสำหรับรายละเอียด */
+}

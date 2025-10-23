@@ -1,0 +1,277 @@
+.container {
+  padding: 4rem;
+  background: #eaf9e7;
+  min-height: 100vh;
+  font-family: "Inter", Arial, sans-serif;
+}
+
+.title {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #013237;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #4ca771;
+  margin-bottom: 1.5rem;
+}
+
+/* Summary Cards */
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+}
+
+.card h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #013237;
+}
+
+.number {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #013237;
+  margin-top: 0.5rem;
+}
+
+.total {
+  background: #c0e6ba;
+}
+.pending {
+  background: #f4b400;
+  color: #fff;
+}
+.review {
+  background: #4ca771;
+  color: #fff;
+}
+.approved {
+  background: #2b9348;
+  color: #fff;
+}
+
+/* Box */
+.chartBox {
+  background: #fff;
+  padding: 1.25rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+}
+
+.sectionNote {
+  font-size: 0.9rem;
+  color: #4ca771;
+  margin-bottom: 1rem;
+}
+
+/* Search */
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.searchButton {
+  background: #4ca771;
+  border: none;
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Scrollable patient list */
+.scrollBox {
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.patientCard {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0.8rem;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.patientCard:hover {
+  background: #c0e6ba;
+  border-color: #4ca771;
+}
+
+.selected {
+  border: 2px solid #4ca771;
+  background: #d8f5d1;
+}
+
+.patientName {
+  font-weight: bold;
+  color: #013237;
+}
+
+.patientInfo {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #444;
+  margin-top: 0.2rem;
+}
+
+.statusBadge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.statusPending {
+  background: #e55353; /* 🔴 Red for pending_gene */
+  color: #fff;
+}
+
+.statusReview {
+  background: #f4b400; /* 🟡 Yellow for pending_approve */
+  color: #fff;
+}
+
+.statusApproved {
+  background: #2b9348; /* 🟢 Green for approved */
+  color: #fff;
+}
+
+/* Form fields */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+}
+
+.label {
+  font-weight: bold;
+  color: #013237;
+}
+
+.input {
+  padding: 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.errorInput {
+  border-color: #e55353;
+  background: #fff5f5;
+}
+.error {
+  color: #e55353;
+  font-size: 0.8rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.button {
+  background: #4ca771;
+  color: white;
+  padding: 0.7rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+}
+.button:hover {
+  background: #3a8e60;
+}
+
+/* 🌙 DARK MODE */
+:global(html.dark) .container {
+  background: #0d1117;
+  color: #fafafa; /* ✅ text brighter */
+}
+
+
+:global(html.dark) .patientName {
+  color: #ffffff; /* ✅ bright green text */
+}
+
+:global(html.dark) .patientInfo span {
+  color: #b9c4d0; /* ✅ lighter gray-green */
+}
+
+
+:global(html.dark) .title {
+  color: #ffffff;
+}
+
+:global(html.dark) .label {
+  color: #ffffff;
+}
+
+:global(html.dark) .subtitle,
+:global(html.dark) .sectionNote {
+  color: #b9c4d0;
+}
+
+:global(html.dark) .chartBox {
+  background: #161b22;
+  color: #fafafa;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+:global(html.dark) .patientCard {
+  background: #1d252e;
+  color: #fafafa;
+}
+
+:global(html.dark) .selected {
+  background: #23362c;
+  border-color: #4ca771;
+}
+
+:global(html.dark) .input,
+:global(html.dark) .searchInput {
+  background: #0d1117;
+  border: 1px solid #3a3f45;
+  color: #ffffff;
+}
+
+:global(html.dark) .searchButton,
+:global(html.dark) .button {
+  background: #2f8a5a;
+  color: #ffffff;
+}
+
+:global(html.dark) .searchButton:hover,
+:global(html.dark) .button:hover {
+  background: #256349;
+}
+

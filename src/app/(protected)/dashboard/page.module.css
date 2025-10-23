@@ -2,7 +2,8 @@
   padding: 4rem;
   background: #eaf9e7;
   min-height: 100vh;
-  font-family: Arial, sans-serif;
+  font-family: "Inter", Arial, sans-serif;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 .title {
@@ -17,38 +18,20 @@
   margin-bottom: 1.5rem;
 }
 
-/* Layout grid */
-.grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr; /* Left big, right small */
-  gap: 2rem;
-}
-
-.left {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.right {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-/* Cards */
+/* Summary Cards */
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 .card {
-  background: #c0e6ba;
-  padding: 1rem;
   border-radius: 12px;
+  padding: 1rem;
   text-align: center;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
 }
 
 .card h3 {
@@ -58,151 +41,192 @@
 }
 
 .number {
-  font-size: 1.4rem;
-  font-weight: bold;
+  font-size: 1.5rem;
+  font-weight: 800;
   color: #013237;
   margin-top: 0.5rem;
 }
 
-/* Chart box */
+.total { background: #c0e6ba; }
+.pendingGene { background: #e55353; color: #fff; }
+.pendingApprove { background: #f4b400; color: #fff; }
+.approved { background: #2b9348; color: #fff; }
+
+/* Chart + Controls */
+.topRow {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
 .chartBox {
   background: #fff;
-  color: #000000;
-  padding: 1rem;
   border-radius: 12px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-}
-
-/* Activity timeline */
-.activity {
-  background: #fff;
   padding: 1rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border-left: 6px solid #4ca771;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
 }
 
-.activity h3 {
-  margin-bottom: 1rem;
-  color: #013237;
-  font-size: 1.1rem;
-  font-weight: bold;
-}
-
-.activity ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.activity li {
+.controls {
   display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #e0e0e0;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.activity li:last-child {
-  border-bottom: none;
+.filterGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
-.timelineDot {
-  width: 10px;
-  height: 10px;
-  background: #4ca771;
-  border-radius: 50%;
-  margin-top: 4px;
-}
-
-.time {
-  display: block;
-  font-size: 0.8rem;
-  color: #4ca771;
+.filterBtn {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid #4ca771;
+  background: transparent;
+  cursor: pointer;
   font-weight: bold;
-  margin-bottom: 0.3rem;
-}
-
-.detail {
-  font-size: 0.9rem;
   color: #013237;
 }
+
+.activeFilter {
+  background: #4ca771;
+  color: #fff;
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.searchInput {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  width: 220px;
+}
+
+.searchButton,
+.exportBtn {
+  background: #4ca771;
+  border: none;
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+}
+
+.exportBtn {
+  align-self: flex-start;
+}
+
+/* Table */
+.tableBox {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+  padding: 1rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  text-align: left;
+  color: #013237;
+  border-bottom: 2px solid #4ca771;
+  padding: 10px;
+}
+
+.table td {
+  padding: 10px;
+  border-bottom: 1px solid #dcdcdc;
+}
+
+.statusBadge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: white;
+}
+
+.statusPending { background: #e55353; }
+.statusReview { background: #f4b400; }
+.statusApproved { background: #2b9348; }
+
+/* Activity Log */
+.activityBox {
+  margin-top: 2rem;
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+}
+
 .activityList {
   list-style: none;
-  margin: 0;
   padding: 0;
+  margin-top: 1rem;
+  color: #013237;
+  font-size: 0.9rem;
 }
 
-.activityItem {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.activityItem:last-child {
-  border-bottom: none;
-}
-
+/* 🌙 DARK MODE */
 :global(html.dark) .container {
   background: #0d1117;
-  color: #e6edf3;
+  color: #fafafa;
 }
 
-:global(html.dark) .title {
-  color: #e6edf3;
-}
+:global(html.dark) .title { color: #ffffff; }
+:global(html.dark) .subtitle { color: #b9c4d0; }
 
-:global(html.dark) .subtitle {
-  color: #8b949e;
-}
-
-:global(html.dark) .card {
+:global(html.dark) .chartBox,
+:global(html.dark) .tableBox,
+:global(html.dark) .activityBox {
   background: #161b22;
-  color: #e6edf3;
+  color: #fafafa;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 
-:global(html.dark) .number {
+:global(html.dark) .table th {
+  color: #ffffff;
+  border-bottom: 2px solid #4ca771;
+}
+
+:global(html.dark) .activityList {
   color: #ffffff;
 }
 
-:global(html.dark) .chartBox {
-  background: #161b22;
+:global(html.dark) .table td {
   color: #e6edf3;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  border-bottom: 1px solid #2a323d;
 }
 
-:global(html.dark) .activity {
-  background: #161b22;
-  color: #e6edf3;
-  border-left: 4px solid #4ca771;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
-}
-
-:global(html.dark) .activity h3 {
+:global(html.dark) .filterBtn {
+  border-color: #4ca771;
   color: #e6edf3;
 }
 
-:global(html.dark) .timelineDot {
-  background: #4ca771;
+:global(html.dark) .activeFilter {
+  background: #2f8a5a;
+  border-color: #2f8a5a;
 }
 
-:global(html.dark) .time {
-  color: #58a6ff;
-}
-
-:global(html.dark) .detail {
-  color: #e6edf3;
-}
-
-:global(html.dark) .card h3 {
+:global(html.dark) .searchInput {
+  background: #0d1117;
+  border: 1px solid #3a3f45;
   color: #ffffff;
 }
 
-:global(html.dark) .card .number {
-  color: #ffffff; 
+:global(html.dark) .searchButton,
+:global(html.dark) .exportBtn {
+  background: #2f8a5a;
+  color: #ffffff;
 }
