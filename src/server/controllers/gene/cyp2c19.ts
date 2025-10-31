@@ -1,107 +1,113 @@
 import { Request, Response } from "express";
 import { supabase } from "../../supabaseClient";
-import { CYP2D6, NewCYP2D6, UpdateCYP2D6 } from "../../types/gene/cyp2d6";
-import { newCYP2D6Schema, updateCYP2D6Schema } from "../../schemas/gene/cyp2d6.schema";
+import { CYP2C19 } from "@/server/types/gene/cyp2c19";
+import { newCYP2C19Schema, updateCYP2C19Schema } from "@/server/schemas/gene/cyp2c19";
 import { newResultSchema } from "@/server/schemas/result.schema";
 import { NewResult } from "@/server/types/result";
 import { PK_FIELD_BY_TABLE } from "@/server/util/constant";
 
-// GET /api/cyp2d6
-export async function getCYP2D6(_req: Request, res: Response) {
+
+// get / api/cyp2c19
+export async function getCYP2C19(_req: Request, res: Response) {
   try {
     const { data, error } = await supabase
-      .from("CYP2D6")
-      .select("*")
-      .limit(100)
-      .returns<CYP2D6[]>();
-
+        .from("CYP2C19")
+        .select("*")
+        .limit(100)
+        .returns<CYP2C19[]>();
     if (error) return res.status(500).json({ error: error.message });
     return res.json(data);
   } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+    return res.status(500).json({ error: String (e?.message || e) });
   }
 }
 
-// GET /api/cyp2d6/:id
-export async function getCYP2D6ById(req: Request, res: Response) {
-  const idNum = Number(req.params.id);
-  if (!Number.isFinite(idNum)) {
-    return res.status(400).json({ error: "Invalid 2D6_Id (must be a number)" });
+// get / api/cyp2c19/:id
+export async function getCYP2C19ById(req: Request, res: Response) {
+  const idNum = Number (req.params.id);
+    if (!Number.isFinite(idNum)) {
+    return res
+      .status(400)
+      .json({ error: "Invalid CYP2C19_Id (must be a number)" });
   }
   try {
     const { data, error } = await supabase
-      .from("CYP2D6")
-      .select("*")
-      .eq("2D6_Id", idNum)   // 👈 ใช้ชื่อคอลัมน์เป็นสตริง
-      .single()
-      .returns<CYP2D6>();
-
-    if (error) return res.status(404).json({ error: error.message });
+        .from("CYP2C19")
+        .select("*")
+        .eq("CYP2C19_Id", idNum)
+        .single()
+        .returns<CYP2C19>();
+    if (error) return res.status(500).json({ error: error.message });
     return res.json(data);
   } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+    return res.status(500).json({ error: String (e?.message || e) });
   }
 }
 
-// POST /api/cyp2d6
-export async function createCYP2D6(req: Request, res: Response) {
-  try {
-    const { body : payload} = newCYP2D6Schema.parse({ body : req.body}) as { body: NewCYP2D6};
+// post / api/cyp2c19
+export async function createCYP2C19(req: Request, res: Response) {
+ try {
+    const { body: payload} = newCYP2C19Schema.parse({ body: req.body }) as { body: CYP2C19};
     const { data, error } = await supabase
-      .from("CYP2D6")
-      .insert(payload)
+      .from("CYP2C19")
+      .insert (payload)
       .select("*")
       .single()
-      .returns<CYP2D6>();
+      .returns<CYP2C19>();
     if (error) return res.status(400).json({ error: error.message });
     return res.status(201).json(data);
-  } catch (e: any) {
-    if (e?.name === "ZodError") return res.status(400).json({ error: e.flatten() });
+ } catch (e: any) {
+    if (e?.name === "ZodError")
+      return res.status(400).json({ error: e.flatten() });
     return res.status(500).json({ error: String(e?.message || e) });
-  }
+ }
 }
 
-// PUT /api/cyp2d6/:id
-export async function updateCYP2D6ById(req: Request, res: Response) {
-  const idNum = Number(req.params.id);
-  if (!Number.isFinite(idNum)) {
-    return res.status(400).json({ error: "Invalid 2D6_Id (must be a number)" });
-  }
-  try {
-    const patch = updateCYP2D6Schema.parse(req.body) as UpdateCYP2D6;
-    const { data, error } = await supabase
-      .from("CYP2D6")
-      .update(patch)
-      .eq("2D6_Id", idNum)
-      .select("*")
-      .single()
-      .returns<CYP2D6>();
-    if (error) return res.status(400).json({ error: error.message });
-    return res.status(200).json(data);
-  } catch (e: any) {
-    if (e?.name === "ZodError") return res.status(400).json({ error: e.flatten() });
-    return res.status(500).json({ error: String(e?.message || e) });
-  }
+// PUT /api/cyp2c19/:id
+export async function updateCYP2C19ById(req: Request, res: Response){
+    const idNum = Number (req.params.id);
+        if (!Number.isFinite(idNum)) {
+            return res
+              .status(400)
+              .json({ error: "Invalid CYP2C19_Id (must be a number)" });
+        }
+    try {
+        const patch = updateCYP2C19Schema.parse(req.body) as Partial<CYP2C19>;
+        const { data, error } = await supabase
+            .from("CYP2C19")
+            .update(patch)
+            .eq("CYP2C19_Id", idNum)
+            .select("*")
+            .single()
+            .returns<CYP2C19>();
+        if (error) return res.status(400).json({ error: error.message });
+        return res.json(data);
+    } catch (e : any) {
+        if (e?.name === "ZodError")
+        return res.status(400).json({ error: e.flatten() });
+        return res.status(500).json({ error: String(e?.message || e) });
+    }
 }
 
-// DELETE /api/cyp2d6/:id
-export async function deleteCYP2D6ById(req: Request, res: Response) {
-  const idNum = Number(req.params.id);
-  if (!Number.isFinite(idNum)) {
-    return res.status(400).json({ error: "Invalid 2D6_Id (must be a number)" });
-  }
-  try {
-    const { error } = await supabase
-      .from("CYP2D6")
-      .delete()
-      .eq("2D6_Id", idNum);
-    if (error) return res.status(500).json({ error: error.message });
-    return res.json({ ok: true, message: `CYP2D6 ${idNum} deleted` });
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
-  }
+// DELETE /api/cyp2c19/:id
+export async function deleteCYP2C19ById(req: Request, res: Response) {
+    const idNum = Number (req.params.id);
+    if (!Number.isFinite(idNum)) {
+        return res
+          .status(400)
+          .json({ error: "Invalid CYP2C19_Id (must be a number)" });
+    }
+    try {
+        const { error } = await supabase
+            .from("CYP2C19")
+            .delete()
+            .eq("CYP2C19_Id", idNum);
+        if (error) return res.status(500).json({ error: error.message });
+        return res.json({ ok: true, message: `CYP2C19 ${idNum} deleted` });
+    } catch (e: any) {
+        return res.status(500).json({ error: String(e?.message || e) });
+    }
 }
-
 
 export async function saveToResult(req: Request, res: Response) {
     const geneid = Number(req.body?.geneid);
@@ -118,7 +124,6 @@ export async function saveToResult(req: Request, res: Response) {
           .select("gene_name")
           .eq("gene_id", geneid)
           .limit(1)
-          console.log(geneRows)
 
           if (geneError) return res.status(500).json({ error: geneError.message });
           if (!geneRows?.length) return res.status(400).json({ error: "Gene not found" });
@@ -130,14 +135,10 @@ export async function saveToResult(req: Request, res: Response) {
         const { data: geneRow, error: tableErr} = await supabase
             .from(geneName)
             .select("*")
-            .eq("CYP2D6x4_1847G", req.body.CYP2D6x4_1847G)
-            .eq("CYP2D6x10_100C", req.body.CYP2D6x10_100C)
-            .eq("CYP2D6x41_2989G", req.body.CYP2D6x41_2989G)
-            .eq("CNV_Intron", req.body.CNV_Intron)
-            .eq("CNV_Exon", req.body.CNV_Exon)
+            .eq("CYPx2_681G", req.body.CYPx2_681G)
+            .eq("CYPx3_636G", req.body.CYPx3_636G)
+            .eq("CYPx17_806C", req.body.CYPx17_806C)
             .single();
-
-
 
         if (tableErr) return res.status(500).json({ error: tableErr.message });
         if (!geneRow) return res.status(404).json({ error: "No matching gene record found" });

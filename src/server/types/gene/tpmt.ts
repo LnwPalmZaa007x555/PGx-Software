@@ -4,6 +4,7 @@ export interface TPMT {
   Predict_Geno: string;   // varchar
   Predict_Pheno: string;  // varchar
   Recommend: string;      // varchar
+  gene_id: Number;
 }
 
 export type NewTPMT = Omit<TPMT, "TPMT_Id">;

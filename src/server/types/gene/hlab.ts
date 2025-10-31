@@ -6,6 +6,7 @@ export interface HLAB {
   Ethic_groups: string;
   Odd_ratios: string;
   Referances: string;
+  gene_id: Number;
 }
 
 export type NewHLAB = Omit<HLAB, "HLA_B_Id">;

@@ -18,6 +18,10 @@ import tpmtRoutes from "./routes/gene/tpmt";
 import cyp2c9Routes from "./routes/gene/cyp2c9";
 import hlabRoutes from "./routes/gene/hlab";
 import cyp2d6Routes from "./routes/gene/cyp2d6";
+import cyp2c19Routes from "./routes/gene/cyp2c19";
+
+//result
+import resultRoutes from "./routes/result";
 
 // --- auth ---
 import authRoutes from "./routes/auth";
@@ -25,6 +29,9 @@ import authRoutes from "./routes/auth";
 // import { requireRole } from "./middlewares/requireRole"; // (optional)
 
 const app = express();
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // --- CORS ---
 const FRONTEND_ORIGIN = process.env.ALLOW_ORIGIN || "http://localhost:3000";
@@ -49,8 +56,10 @@ app.use("/api/tpmt", tpmtRoutes);
 app.use("/api/hlab", hlabRoutes);
 app.use("/api/cyp2d6", cyp2d6Routes);
 app.use("/api/cyp2c9",cyp2c9Routes);
+app.use("/api/cyp2c19",cyp2c19Routes);
 
-
+//result
+app.use("/api/results", resultRoutes);
 
 // --- auth ----
 app.use("/api/auth", authRoutes);

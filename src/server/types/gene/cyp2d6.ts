@@ -9,6 +9,7 @@ export interface CYP2D6 {
   Phenotype: string;
   Predict_Pheno: string;
   Recommend: string;
+  gene_id: Number;
 }
 
 export type NewCYP2D6 = Omit<CYP2D6, "2D6_Id">;
