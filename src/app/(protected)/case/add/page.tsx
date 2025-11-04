@@ -1,14 +1,15 @@
 "use client";
 
-import { usePatients } from "@/context/PatientContext";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Search, User, Save } from "lucide-react";
+import { Save, X } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import styles from "./page.module.css";
+import { createPatientFromForm } from "@/utils/patients";
 
-export default function PatientPage() {
-  const { patients, addPatient } = usePatients();
+export default function AddCasePage() {
   const { language } = useLanguage();
+  const router = useRouter();
 
   const [form, setForm] = useState({
     idCard: "",
@@ -21,68 +22,10 @@ export default function PatientPage() {
     otherEthnicity: "",
   });
 
-  const [searchId, setSearchId] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [highlightedFields, setHighlightedFields] = useState<string[]>([]);
 
-  // ===== Search & Autofill =====
-  const handleSearch = () => {
-    if (!/^\d{13}$/.test(searchId)) {
-      setErrors((prev) => ({
-        ...prev,
-        searchId:
-          language === "en"
-            ? "ID Card must be 13 digits"
-            : "เลขบัตรประชาชนต้องมี 13 หลัก",
-      }));
-      return;
-    }
-
-    const existing = patients.find((p) => p.idCard === searchId);
-
-    if (existing) {
-      const fieldsToFill = [
-        "idCard",
-        "firstName",
-        "lastName",
-        "sex",
-        "dob",
-        "phone",
-        "ethnicity",
-        "otherEthnicity",
-      ];
-
-      setForm({
-        idCard: existing.idCard,
-        firstName: existing.firstName,
-        lastName: existing.lastName,
-        sex: existing.sex,
-        dob: existing.dob,
-        phone: existing.phone,
-        ethnicity: existing.ethnicity,
-        otherEthnicity: existing.otherEthnicity || "",
-      });
-
-      setErrors((prev) => {
-        const cleared = { ...prev };
-        fieldsToFill.concat("searchId").forEach((k) => delete cleared[k]);
-        return cleared;
-      });
-
-      setHighlightedFields(fieldsToFill);
-      setTimeout(() => setHighlightedFields([]), 2000);
-    } else {
-      setErrors((prev) => ({
-        ...prev,
-        searchId:
-          language === "en"
-            ? "No patient record found"
-            : "ไม่พบข้อมูลผู้ป่วย",
-      }));
-    }
-  };
-
-  // ===== Handlers =====
+  // 🔄 Handle input
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -95,6 +38,13 @@ export default function PatientPage() {
       return;
     }
 
+    if (name === "phone") {
+      const onlyNums = value.replace(/\D/g, "").slice(0, 10);
+      setForm((prev) => ({ ...prev, phone: onlyNums }));
+      setErrors((prev) => ({ ...prev, phone: "" }));
+      return;
+    }
+
     setForm((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
@@ -104,15 +54,15 @@ export default function PatientPage() {
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  // ===== Validate =====
+  // ✅ Validate
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
     if (!/^\d{13}$/.test(form.idCard))
       newErrors.idCard =
         language === "en"
-          ? "ID Card must be 13 digits"
-          : "เลขบัตรประชาชนต้องมี 13 หลัก";
+          ? "HN must be 13 digits"
+          : "HN ต้องมี 13 หลัก";
 
     if (!form.firstName)
       newErrors.firstName =
@@ -129,12 +79,12 @@ export default function PatientPage() {
     if (!form.dob) {
       newErrors.dob =
         language === "en"
-          ? "Date of birth is required"
+          ? "Please select date of birth"
           : "กรุณาเลือกวันเดือนปีเกิด";
     } else if (new Date(form.dob) >= new Date()) {
       newErrors.dob =
         language === "en"
-          ? "Date of birth cannot be today or future"
+          ? "Date of birth cannot be today or in the future"
           : "วันเกิดต้องไม่เป็นวันที่ปัจจุบันหรืออนาคต";
     }
 
@@ -148,139 +98,103 @@ export default function PatientPage() {
       newErrors.ethnicity =
         language === "en"
           ? "Please select ethnicity"
-          : "กรุณาเลือกเชื้อชาติ";
+          : "กรุณาเลือกสัญชาติ";
     } else if (form.ethnicity === "other" && !form.otherEthnicity) {
       newErrors.otherEthnicity =
         language === "en"
           ? "Please specify ethnicity"
-          : "กรุณาระบุเชื้อชาติ";
+          : "กรุณาระบุสัญชาติอื่น ๆ";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // ===== Submit =====
-  const handleSubmit = (e: React.FormEvent) => {
+  // 💾 Save form
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
-    addPatient({
-      ...form,
-      gene: "",
-      markerValues: {},
-      genotype: "",
-      phenotype: "",
-      status: "pending_gene",
-    });
-
-    alert(
-      language === "en"
-        ? "✅ Patient record saved successfully!"
-        : "✅ บันทึกข้อมูลผู้ป่วยเรียบร้อยแล้ว!"
-    );
-
-    setForm({
-      idCard: "",
-      firstName: "",
-      lastName: "",
-      sex: "",
-      dob: "",
-      phone: "",
-      ethnicity: "",
-      otherEthnicity: "",
-    });
+    try {
+      await createPatientFromForm(form);
+      alert(
+        language === "en"
+          ? "✅ Patient created successfully!"
+          : "✅ บันทึกผู้ป่วยเรียบร้อยแล้ว!"
+      );
+      setForm({
+        idCard: "",
+        firstName: "",
+        lastName: "",
+        sex: "",
+        dob: "",
+        phone: "",
+        ethnicity: "",
+        otherEthnicity: "",
+      });
+      router.push("/case");
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || err?.message || (language === "en" ? "Create failed" : "บันทึกล้มเหลว");
+      alert(msg);
+    }
   };
 
-  // ===== UI =====
   return (
     <form className={styles.container} onSubmit={handleSubmit}>
-      <h1 className={styles.title}>
-        {language === "en" ? "Patient Form" : "แบบฟอร์มผู้ป่วย"}
-      </h1>
-      <p className={styles.subtitle}>
-        {language === "en"
-          ? "Add new patient record"
-          : "เพิ่มข้อมูลผู้ป่วยใหม่"}
-      </p>
-
-      {/* Search Bar */}
-      <div className={styles.searchBar}>
-        <input
-          type="text"
-          className={`${styles.searchInput} ${
-            errors.searchId ? styles.errorInput : ""
-          }`}
-          value={searchId}
-          onChange={(e) => {
-            const only = e.target.value.replace(/\D/g, "").slice(0, 13);
-            setSearchId(only);
-            setErrors((prev) => ({ ...prev, searchId: "" }));
-          }}
-          placeholder={
-            language === "en"
-              ? "Search by ID Card (13 digits)"
-              : "ค้นหาด้วยเลขบัตรประชาชน (13 หลัก)"
-          }
-          maxLength={13}
-        />
+      <div className={styles.header}>
+        <h1 className={styles.title}>
+          {language === "en" ? "Add New Case" : "เพิ่มเคสใหม่"}
+        </h1>
         <button
           type="button"
-          className={styles.searchButton}
-          onClick={handleSearch}
+          className={styles.closeBtn}
+          onClick={() => router.push("/case")}
         >
-          <Search size={18} />
+          <X size={22} />
         </button>
       </div>
-      {errors.searchId && (
-        <span className={styles.searchError}>{errors.searchId}</span>
-      )}
 
-      {/* Patient Info */}
+      <p className={styles.subtitle}>
+        {language === "en"
+          ? "Enter patient demographic information."
+          : "กรอกข้อมูลประวัติผู้ป่วย"}
+      </p>
+
       <div className={styles.section}>
-        <h2 className={styles.sectionTitle}>
-          <User size={18} color="#4CA771" style={{ marginRight: 6 }} />
-          {language === "en" ? "Patient Information" : "ข้อมูลผู้ป่วย"}
-        </h2>
-
-        {/* ID Card */}
+        {/* HN */}
         <div className={styles.field}>
           <label className={styles.label}>
-            {language === "en" ? "ID Card" : "เลขบัตรประชาชน"}
+            {language === "en" ? "HN" : "หมายเลข HN"}
           </label>
           <input
-            type="text"
             className={`${styles.input} ${
               errors.idCard ? styles.errorInput : ""
-            } ${highlightedFields.includes("idCard") ? styles.autofilled : ""}`}
+            }`}
             name="idCard"
             value={form.idCard}
             onChange={handleChange}
             placeholder={
               language === "en"
-                ? "ID Card (13 digits)"
-                : "เลขบัตรประชาชน (13 หลัก)"
+                ? "Enter 13-digit HN"
+                : "กรอกหมายเลข HN (13 หลัก)"
             }
-            maxLength={13}
           />
           {errors.idCard && (
             <span className={styles.error}>{errors.idCard}</span>
           )}
         </div>
 
-        {/* First + Last */}
+        {/* First / Last Name */}
         <div className={styles.row}>
           <div className={styles.field}>
             <label className={styles.label}>
-              {language === "en" ? "Firstname" : "ชื่อ"}
+              {language === "en" ? "First Name" : "ชื่อ"}
             </label>
             <input
+              name="firstName"
               className={`${styles.input} ${
                 errors.firstName ? styles.errorInput : ""
-              } ${
-                highlightedFields.includes("firstName") ? styles.autofilled : ""
               }`}
-              name="firstName"
               value={form.firstName}
               onChange={handleChange}
               placeholder={language === "en" ? "First Name" : "ชื่อ"}
@@ -291,15 +205,13 @@ export default function PatientPage() {
           </div>
           <div className={styles.field}>
             <label className={styles.label}>
-              {language === "en" ? "Lastname" : "นามสกุล"}
+              {language === "en" ? "Last Name" : "นามสกุล"}
             </label>
             <input
+              name="lastName"
               className={`${styles.input} ${
                 errors.lastName ? styles.errorInput : ""
-              } ${
-                highlightedFields.includes("lastName") ? styles.autofilled : ""
               }`}
-              name="lastName"
               value={form.lastName}
               onChange={handleChange}
               placeholder={language === "en" ? "Last Name" : "นามสกุล"}
@@ -318,10 +230,10 @@ export default function PatientPage() {
             </label>
             <input
               type="date"
+              name="dob"
               className={`${styles.input} ${styles.dateInput} ${
                 errors.dob ? styles.errorInput : ""
-              } ${highlightedFields.includes("dob") ? styles.autofilled : ""}`}
-              name="dob"
+              }`}
               value={form.dob}
               onChange={handleChange}
               max={new Date().toISOString().split("T")[0]}
@@ -364,31 +276,27 @@ export default function PatientPage() {
             {language === "en" ? "Phone" : "เบอร์โทรศัพท์"}
           </label>
           <input
-            type="text"
+            name="phone"
             className={`${styles.input} ${
               errors.phone ? styles.errorInput : ""
-            } ${highlightedFields.includes("phone") ? styles.autofilled : ""}`}
-            name="phone"
+            }`}
             value={form.phone}
-            onChange={(e) => {
-              const onlyNums = e.target.value.replace(/\D/g, "").slice(0, 10);
-              setForm((prev) => ({ ...prev, phone: onlyNums }));
-              setErrors((prev) => ({ ...prev, phone: "" }));
-            }}
+            onChange={handleChange}
             placeholder={
               language === "en"
-                ? "Phone (10 digits)"
-                : "เบอร์โทรศัพท์ (10 หลัก)"
+                ? "Enter phone number (10 digits)"
+                : "กรอกเบอร์โทร (10 หลัก)"
             }
-            maxLength={10}
           />
-          {errors.phone && <span className={styles.error}>{errors.phone}</span>}
+          {errors.phone && (
+            <span className={styles.error}>{errors.phone}</span>
+          )}
         </div>
 
         {/* Ethnicity */}
         <div className={styles.field}>
           <label className={styles.label}>
-            {language === "en" ? "Ethnicity" : "เชื้อชาติ"}
+            {language === "en" ? "Ethnicity" : "สัญชาติ"}
           </label>
           <div className={styles.radioGroup}>
             <label>
@@ -412,27 +320,21 @@ export default function PatientPage() {
               {language === "en" ? "Other" : "อื่น ๆ"}
             </label>
           </div>
-
           {form.ethnicity === "other" && (
             <input
+              name="otherEthnicity"
               className={`${styles.input} ${
                 errors.otherEthnicity ? styles.errorInput : ""
-              } ${
-                highlightedFields.includes("otherEthnicity")
-                  ? styles.autofilled
-                  : ""
               }`}
-              name="otherEthnicity"
-              value={form.otherEthnicity}
-              onChange={handleChange}
               placeholder={
                 language === "en"
-                  ? "Specify ethnicity"
-                  : "ระบุเชื้อชาติอื่น ๆ"
+                  ? "Specify nationality"
+                  : "ระบุสัญชาติอื่น ๆ"
               }
+              value={form.otherEthnicity}
+              onChange={handleChange}
             />
           )}
-
           {errors.ethnicity && (
             <span className={styles.error}>{errors.ethnicity}</span>
           )}

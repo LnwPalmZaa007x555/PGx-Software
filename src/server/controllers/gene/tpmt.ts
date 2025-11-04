@@ -2,9 +2,9 @@ import { Request, Response } from "express";
 import { supabase } from "../../supabaseClient";
 import { NewTPMT, TPMT, UpdateTPMT } from "../../types/gene/tpmt";
 import { newTPMTSchema, updateTPMTSchema } from "../../schemas/gene/tpmt.schema";
-import { newResultSchema } from "@/server/schemas/result.schema";
-import { NewResult } from "@/server/types/result";
-import { PK_FIELD_BY_TABLE } from "@/server/util/constant";
+import { newResultSchema } from "../../schemas/result.schema";
+import { NewResult } from "../../types/result";
+import { PK_FIELD_BY_TABLE } from "../../util/constant";
 
 // GET /api/tpmt
 export async function getTPMT(_req: Request, res: Response) {

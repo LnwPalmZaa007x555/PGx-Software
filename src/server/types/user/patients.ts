@@ -8,6 +8,9 @@ export interface Patient {
   Phone: string;        // varchar
   Id_Card: string;      // varchar
   Ethnicity: string;    // varchar
+  status: string;      // varchar
+  create_at: string;   // timestamptz
+  approve_at: string | null;   // timestamptz (nullable when not yet approved)
 }
 
 // ใช้ตอนสร้าง: ไม่ต้องส่ง PK

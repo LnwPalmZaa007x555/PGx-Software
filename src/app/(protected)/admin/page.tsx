@@ -1,455 +1,731 @@
 "use client";
 
-import { useState } from "react";
-import styles from "./page.module.css";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
-  Edit3,
-  Trash2,
-  Eye,
-  EyeOff,
+  Shield,
+  Users,
+  FileLock,
+  Link,
+  Settings,
+  Key,
+  FileText,
+  Download,
   Plus,
-  Save,
+  Trash2,
+  Edit,
   X,
-  Search,
-  AlertCircle,
+  Save,
 } from "lucide-react";
+import styles from "./page.module.css";
 import { useLanguage } from "@/context/LanguageContext";
+import { meRequest } from "@/utils/auth";
+import { fetchStaff, updateStaffById, type StaffDto } from "@/utils/staff";
 
-export default function AdminUserManagement() {
+/* Types */
+type RoleOption = "Admin" | "Doctor" | "MedTech" | "Pharmacist";
+
+interface User {
+  id: number;
+  fname: string;
+  lname: string;
+  role: RoleOption;
+  email: string;
+}
+
+interface Audit {
+  id: string;
+  user: string;
+  action: string;
+  timestamp: string;
+}
+
+type PDPAItemKey =
+  | "econsent"
+  | "templates"
+  | "retention"
+  | "dpia"
+  | "rop"
+  | "breach";
+
+type IntegrationKey = "his" | "analyzer" | "external";
+
+/* Helpers */
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+export default function AdminPanel() {
   const { language } = useLanguage();
+  const lang = language === "en" ? "en" : "th";
+  const router = useRouter();
 
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      firstName: "Anucha",
-      lastName: "Kittisak",
-      email: "anucha@hospital.com",
-      password: "123456",
-      role: "Physician",
-      hospital: "Ramathibodi Hospital",
-    },
-    {
-      id: 2,
-      firstName: "Mali",
-      lastName: "Siriwan",
-      email: "mali@hospital.com",
-      password: "pass789",
-      role: "Pharmacist",
-      hospital: "Siriraj Hospital",
-    },
-    {
-      id: 3,
-      firstName: "Bee",
-      lastName: "Wongchai",
-      email: "bee@hospital.com",
-      password: "data999",
-      role: "Data Entry",
-      hospital: "Bangkok Hospital",
-    },
+  /* ---------------- USERS ---------------- */
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        // Check role
+        const me = await meRequest();
+        if ((me.Role || "").toLowerCase() !== "admin") {
+          // redirect non-admins out of this page
+          router.replace("/dashboard");
+          return;
+        }
+        const staff = await fetchStaff();
+        const mapped: User[] = staff.map((s) => ({
+          id: s.Staff_Id,
+          fname: s.Fname,
+          lname: s.Lname,
+          email: s.email,
+          role: (s.Role as RoleOption) || "Doctor",
+        }));
+        setUsers(mapped);
+      } catch (e: any) {
+        setError(e?.response?.data?.error || e?.message || "Failed to load staff");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [router]);
+
+  // Add/Edit User Modals
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [newUser, setNewUser] = useState<User>({ id: 0, fname: "", lname: "", email: "", role: "Doctor" });
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
+
+  const openAddUser = () => {
+    setNewUser({ id: 0, fname: "", lname: "", email: "", role: "Doctor" });
+    setShowAddUser(true);
+  };
+  const saveNewUser = () => {
+    // Optional: implement createStaff API when needed
+    alert(lang === "en" ? "Creating staff via API not implemented yet" : "ยังไม่ได้ทำ API เพิ่มผู้ใช้");
+  };
+  const saveEditUser = async () => {
+    if (!editUser) return;
+    if (!editUser.fname || !editUser.lname || !editUser.email) return;
+    const patch = { Fname: editUser.fname, Lname: editUser.lname, email: editUser.email, Role: editUser.role } as Partial<StaffDto>;
+    const updated = await updateStaffById(editUser.id, patch);
+    setUsers((prev) => prev.map((u) => (u.id === editUser.id ? { ...u, fname: updated.Fname, lname: updated.Lname, email: updated.email, role: updated.Role as RoleOption } : u)));
+    setEditUser(null);
+  };
+  const confirmDelete = () => {
+    if (deleteUserId == null) return;
+    setUsers((prev) => prev.filter((u) => u.id !== deleteUserId));
+    setDeleteUserId(null);
+  };
+
+  /* ---------------- PDPA ---------------- */
+  const pdpaMap: Record<PDPAItemKey, string> = useMemo(
+    () => ({
+      econsent: lang === "en" ? "e-Consent setup" : "ตั้งค่า e-Consent",
+      templates: lang === "en" ? "Consent Templates" : "เทมเพลต Consent",
+      retention: lang === "en" ? "Retention Policy" : "ระยะเวลาเก็บรักษา",
+      dpia: lang === "en" ? "Risk Assessment (DPIA)" : "แบบประเมินความเสี่ยง (DPIA)",
+      rop: lang === "en" ? "Records of Processing" : "บันทึกร่องรอยการประมวลผล",
+      breach: lang === "en" ? "Data Breach Handling" : "กระบวนการแจ้งเหตุละเมิดข้อมูล",
+    }),
+    [lang]
+  );
+
+  type PDPAConfig = {
+    version?: string;
+    purpose?: string;
+    retentionDays?: number;
+    note?: string;
+  };
+  const [pdpaModal, setPdpaModal] = useState<PDPAItemKey | null>(null);
+  const [pdpaConfig, setPdpaConfig] = useState<PDPAConfig>({
+    version: "v1.0",
+    purpose: "",
+    retentionDays: 365,
+    note: "",
+  });
+  const savePdpa = () => {
+    // mock save
+    setPdpaModal(null);
+  };
+
+  /* ---------------- Integration ---------------- */
+  const [integrationModal, setIntegrationModal] = useState<IntegrationKey | null>(null);
+  const [integrationForm, setIntegrationForm] = useState({
+    endpoint: "",
+    token: "",
+    status: "Disconnected",
+  });
+  const saveIntegration = () => {
+    setIntegrationForm((f) => ({ ...f, status: "Connected" }));
+    setIntegrationModal(null);
+  };
+
+  /* ---------------- System Settings ---------------- */
+  const [sysModal, setSysModal] = useState(false);
+  const [isoMessage, setIsoMessage] = useState("");
+  const [logoFile, setLogoFile] = useState<string>("");
+
+  /* ---------------- License & TT ---------------- */
+  const [licenseModal, setLicenseModal] = useState(false);
+
+  /* ---------------- Audit ---------------- */
+  const [logs, setLogs] = useState<Audit[]>([
+    { id: "1", user: "Admin", action: "Login", timestamp: "2025-11-01 09:20" },
+    { id: "2", user: "Somchai", action: "Viewed Patient #102", timestamp: "2025-11-01 10:05" },
+    { id: "3", user: "Anan", action: "Edited SOP#2", timestamp: "2025-11-01 13:12" },
   ]);
+  const [viewLog, setViewLog] = useState<Audit | null>(null);
 
-  const [showPassword, setShowPassword] = useState<Record<number, boolean>>({});
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [newUser, setNewUser] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    role: "",
-    hospital: "",
-  });
-  const [error, setError] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterRole, setFilterRole] = useState("All");
+  /* UI text */
+  const txt = {
+    pageTitle: lang === "en" ? "System Settings (Admin Panel)" : "การตั้งค่าระบบ (Admin Panel)",
+    pageDesc:
+      lang === "en"
+        ? "Manage users, privacy (PDPA), integrations, and audit logs."
+        : "จัดการผู้ใช้ ความเป็นส่วนตัว (PDPA) การเชื่อมต่อ และบันทึกการใช้งาน",
+    mock: lang === "en" ? "Mock only (no API)" : "จำลองเท่านั้น (ไม่เชื่อม API)",
 
-  // Filter
-  const filteredUsers = users.filter((u) => {
-    const matchRole = filterRole === "All" || u.role === filterRole;
-    const matchName = u.firstName
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    return matchRole && matchName;
-  });
+  users: lang === "en" ? "User Management" : "การจัดการผู้ใช้งาน",
+    add: lang === "en" ? "Add" : "เพิ่ม",
+    edit: lang === "en" ? "Edit" : "แก้ไข",
+    delete: lang === "en" ? "Delete" : "ลบ",
+    save: lang === "en" ? "Save" : "บันทึก",
+    cancel: lang === "en" ? "Cancel" : "ยกเลิก",
 
-  const validateUser = (user: any) =>
-    user.firstName.trim() &&
-    user.lastName.trim() &&
-    user.email.trim() &&
-    user.password.trim() &&
-    user.role.trim() &&
-    user.hospital.trim();
+    pdpa: "PDPA Management",
+    cfg: lang === "en" ? "Configure" : "ตั้งค่า",
 
-  const handleAddUser = () => {
-    if (!validateUser(newUser)) {
-      setError(
-        language === "en"
-          ? "⚠️ Please fill in all fields before saving."
-          : "⚠️ กรุณากรอกข้อมูลให้ครบทุกช่องก่อนบันทึก"
-      );
-      return;
-    }
-    const newId = Date.now();
-    setUsers((prev) => [...prev, { id: newId, ...newUser }]);
-    setNewUser({
-      firstName: "",
-      lastName: "",
-      email: "",
-      password: "",
-      role: "",
-      hospital: "",
-    });
-    setError("");
-    setShowAddModal(false);
+    integ: "Integration Settings",
+    sys: lang === "en" ? "System Settings" : "การตั้งค่าทั่วไป",
+    license: lang === "en" ? "License & Technology Transfer" : "สิทธิ์การใช้งาน & ถ่ายทอดเทคโนโลยี",
+    audit: "Audit Log",
   };
 
-  const handleEditUser = (user: any) => {
-    setSelectedUser(user);
-    setShowEditModal(true);
-    setError("");
-  };
-
-  const handleSaveEdit = () => {
-    if (!validateUser(selectedUser)) {
-      setError(
-        language === "en"
-          ? "⚠️ Please fill in all fields before saving."
-          : "⚠️ กรุณากรอกข้อมูลให้ครบทุกช่องก่อนบันทึก"
-      );
-      return;
-    }
-    setUsers((prev) =>
-      prev.map((u) => (u.id === selectedUser.id ? selectedUser : u))
-    );
-    setError("");
-    setShowEditModal(false);
-  };
-
-  const handleDeleteUser = (id: number) => {
-    if (
-      confirm(
-        language === "en"
-          ? "Delete this user?"
-          : "คุณต้องการลบผู้ใช้นี้หรือไม่?"
-      )
-    ) {
-      setUsers((prev) => prev.filter((u) => u.id !== id));
-    }
-  };
-
-  const toggleShowPassword = (id: number) => {
-    setShowPassword((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  // =================== Render ===================
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>
-        {language === "en" ? "User Management" : "จัดการผู้ใช้"}
-      </h1>
-      <p className={styles.subtitle}>
-        {language === "en"
-          ? "Add, search, and manage users with full admin control"
-          : "เพิ่ม ค้นหา และจัดการผู้ใช้ได้อย่างสมบูรณ์"}
-      </p>
+      <h1 className={styles.title}>{txt.pageTitle}</h1>
+      <p className={styles.subtitle}>{txt.pageDesc}</p>
 
-      {/* Filter + Search */}
-      <div className={styles.filterBar}>
-        <div className={styles.filterGroup}>
-          <label>
-            {language === "en" ? "Filter by Role:" : "กรองตามบทบาท:"}
-          </label>
-          <select
-            value={filterRole}
-            onChange={(e) => setFilterRole(e.target.value)}
-            className={styles.selectSmall}
-          >
-            <option value="All">{language === "en" ? "All" : "ทั้งหมด"}</option>
-            <option value="Physician">
-              {language === "en" ? "Physician" : "แพทย์"}
-            </option>
-            <option value="Pharmacist">
-              {language === "en" ? "Pharmacist" : "เภสัชกร"}
-            </option>
-            <option value="Data Entry">
-              {language === "en" ? "Data Entry" : "เจ้าหน้าที่บันทึกข้อมูล"}
-            </option>
-            <option value="Admin">
-              {language === "en" ? "Admin" : "ผู้ดูแลระบบ"}
-            </option>
-          </select>
+      {/* USER MANAGEMENT */}
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>
+          <Users size={18} /> {txt.users}
+        </h2>
+
+        <div className={styles.row} style={{ marginBottom: ".8rem" }}>
+          <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={openAddUser}>
+            <Plus size={16} /> {txt.add} User
+          </button>
         </div>
 
-        <div className={styles.searchGroup}>
-          <Search size={16} />
-          <input
-            type="text"
-            placeholder={
-              language === "en"
-                ? "Search by first name..."
-                : "ค้นหาด้วยชื่อ..."
-            }
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className={styles.searchInput}
-          />
-        </div>
-
-        <button onClick={() => setShowAddModal(true)} className={styles.addBtn}>
-          <Plus size={16} />{" "}
-          {language === "en" ? "Add User" : "เพิ่มผู้ใช้"}
-        </button>
-      </div>
-
-      {/* Table */}
-      <div className={styles.tableBox}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>{language === "en" ? "Full Name" : "ชื่อ-นามสกุล"}</th>
-              <th>Email</th>
-              <th>{language === "en" ? "Password" : "รหัสผ่าน"}</th>
-              <th>{language === "en" ? "Role" : "บทบาท"}</th>
-              <th>{language === "en" ? "Hospital" : "โรงพยาบาล"}</th>
-              <th>{language === "en" ? "Actions" : "การจัดการ"}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.map((u) => (
-              <tr key={u.id}>
-                <td>
-                  {u.firstName} {u.lastName}
-                </td>
-                <td>{u.email}</td>
-                <td>
-                  {showPassword[u.id] ? u.password : "••••••"}
-                  <button
-                    className={styles.iconBtn}
-                    onClick={() => toggleShowPassword(u.id)}
-                    title={
-                      language === "en"
-                        ? "Show Password"
-                        : "แสดงรหัสผ่าน"
-                    }
-                  >
-                    {showPassword[u.id] ? (
-                      <EyeOff size={14} />
-                    ) : (
-                      <Eye size={14} />
-                    )}
-                  </button>
-                </td>
-                  <td>
-                    {u.role === "Physician" && (language === "en" ? "Physician" : "แพทย์")}
-                    {u.role === "Pharmacist" && (language === "en" ? "Pharmacist" : "เภสัชกร")}
-                    {u.role === "Data Entry" && (language === "en" ? "Data Entry" : "เจ้าหน้าที่บันทึกข้อมูล")}
-                    {u.role === "Admin" && (language === "en" ? "Admin" : "ผู้ดูแลระบบ")}
-                  </td>
-                <td>{u.hospital}</td>
-                <td>
-                  <button
-                    className={styles.iconBtn}
-                    title={language === "en" ? "Edit User" : "แก้ไขผู้ใช้"}
-                    onClick={() => handleEditUser(u)}
-                  >
-                    <Edit3 size={16} />
-                  </button>
-                  <button
-                    className={styles.iconBtn}
-                    title={language === "en" ? "Delete User" : "ลบผู้ใช้"}
-                    onClick={() => handleDeleteUser(u.id)}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </td>
+        {loading ? (
+          <p>{lang === "en" ? "Loading..." : "กำลังโหลด..."}</p>
+        ) : error ? (
+          <p style={{ color: "#b91c1c" }}>{error}</p>
+        ) : (
+        <div className={styles.tableBox}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>{lang === "en" ? "First name" : "ชื่อ"}</th>
+                <th>{lang === "en" ? "Last name" : "นามสกุล"}</th>
+                <th>Email</th>
+                <th>{lang === "en" ? "Role" : "สิทธิ์"}</th>
+                <th>{lang === "en" ? "Actions" : "การทำงาน"}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.id}>
+                  <td>{u.fname}</td>
+                  <td>{u.lname}</td>
+                  <td>{u.email}</td>
+                  <td>{u.role}</td>
+                  <td className={styles.row}>
+                    <button
+                      className={`${styles.btn} ${styles.btnGhost}`}
+                      onClick={() => setEditUser({ ...u })}
+                    >
+                      <Edit size={14} /> {txt.edit}
+                    </button>
+                    <button
+                      className={`${styles.btn} ${styles.btnDanger}`}
+                      onClick={() => setDeleteUserId(u.id)}
+                    >
+                      <Trash2 size={14} /> {txt.delete}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        )}
       </div>
 
-      {/* Modal: Add */}
-      {showAddModal && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modal}>
-            <h3>{language === "en" ? "Add New User" : "เพิ่มผู้ใช้ใหม่"}</h3>
-            {error && (
-              <p className={styles.errorText}>
-                <AlertCircle size={16} /> {error}
-              </p>
-            )}
-            <label>{language === "en" ? "First Name" : "ชื่อ"}</label>
-            <input
-              type="text"
-              value={newUser.firstName}
-              onChange={(e) =>
-                setNewUser({ ...newUser, firstName: e.target.value })
-              }
-              className={styles.input}
-            />
-            <label>{language === "en" ? "Last Name" : "นามสกุล"}</label>
-            <input
-              type="text"
-              value={newUser.lastName}
-              onChange={(e) =>
-                setNewUser({ ...newUser, lastName: e.target.value })
-              }
-              className={styles.input}
-            />
-            <label>Email</label>
-            <input
-              type="email"
-              value={newUser.email}
-              onChange={(e) =>
-                setNewUser({ ...newUser, email: e.target.value })
-              }
-              className={styles.input}
-            />
-            <label>{language === "en" ? "Password" : "รหัสผ่าน"}</label>
-            <input
-              type="text"
-              value={newUser.password}
-              onChange={(e) =>
-                setNewUser({ ...newUser, password: e.target.value })
-              }
-              className={styles.input}
-            />
-            <label>{language === "en" ? "Hospital" : "โรงพยาบาล"}</label>
-            <input
-              type="text"
-              value={newUser.hospital}
-              onChange={(e) =>
-                setNewUser({ ...newUser, hospital: e.target.value })
-              }
-              className={styles.input}
-            />
-            <label>{language === "en" ? "Role" : "บทบาท"}</label>
-            <select
-              value={newUser.role}
-              onChange={(e) =>
-                setNewUser({ ...newUser, role: e.target.value })
-              }
-              className={styles.select}
-            >
-              <option value="">
-                {language === "en" ? "Select Role" : "เลือกบทบาท"}
-              </option>
-              <option value="Physician">
-                {language === "en" ? "Physician" : "แพทย์"}
-              </option>
-              <option value="Pharmacist">
-                {language === "en" ? "Pharmacist" : "เภสัชกร"}
-              </option>
-              <option value="Data Entry">
-                {language === "en" ? "Data Entry" : "เจ้าหน้าที่บันทึกข้อมูล"}
-              </option>
-              <option value="Admin">
-                {language === "en" ? "Admin" : "ผู้ดูแลระบบ"}
-              </option>
-            </select>
+      {/* PDPA MANAGEMENT */}
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>
+          <FileLock size={18} /> {txt.pdpa}
+        </h2>
 
-            <div className={styles.modalButtons}>
-              <button onClick={handleAddUser} className={styles.saveBtn}>
-                <Save size={16} /> {language === "en" ? "Save" : "บันทึก"}
-              </button>
+        <div className={styles.cardGrid}>
+          {(
+            [
+              ["econsent", "Set dynamic e-Consent / Withdrawal / Legal representative"],
+              ["templates", "Templates & Purpose (Clinical/Research)"],
+              ["retention", "Retention Policy (days/years)"],
+              ["dpia", "DPIA assessment"],
+              ["rop", "Records of Processing"],
+              ["breach", "Data Breach workflow"],
+            ] as [PDPAItemKey, string][]
+          ).map(([key, desc]) => (
+            <div key={key} className={styles.card}>
+              <div className={styles.cardTitle}>{pdpaMap[key]}</div>
+              <div className={styles.cardDesc}>
+                {lang === "en" ? desc : "ตั้งค่าและจัดการตามข้อกำหนด PDPA"}
+              </div>
               <button
-                onClick={() => setShowAddModal(false)}
-                className={styles.cancelBtn}
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                onClick={() => setPdpaModal(key)}
               >
-                <X size={16} /> {language === "en" ? "Cancel" : "ยกเลิก"}
+                <Settings size={16} /> {txt.cfg}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* INTEGRATION */}
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>
+          <Link size={18} /> {txt.integ}
+        </h2>
+
+        <div className={styles.cardGrid}>
+          {(
+            [
+              ["his", "HIS/EMR (FHIR/ADT/ORD/ORU)"],
+              ["analyzer", "Analyzer (ASTM/HL7)"],
+              ["external", "External Lab API"],
+            ] as [IntegrationKey, string][]
+          ).map(([key, label]) => (
+            <div key={key} className={styles.card}>
+              <div className={styles.cardTitle}>{label}</div>
+              <div className={styles.cardDesc}>
+                {lang === "en" ? "Connection configuration and status." : "ตั้งค่าและสถานะการเชื่อมต่อ"}
+              </div>
+              <button
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                onClick={() => {
+                  setIntegrationForm({ endpoint: "", token: "", status: "Disconnected" });
+                  setIntegrationModal(key);
+                }}
+              >
+                <Settings size={16} /> {txt.cfg}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* SYSTEM SETTINGS */}
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>
+          <Settings size={18} /> {txt.sys}
+        </h2>
+        <div className={styles.row}>
+          <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setSysModal(true)}>
+            <Settings size={16} /> {lang === "en" ? "Open settings" : "เปิดการตั้งค่า"}
+          </button>
+        </div>
+      </div>
+
+      {/* LICENSE & TT */}
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>
+          <Key size={18} /> {txt.license}
+        </h2>
+        <div className={styles.cardGrid}>
+          <div className={styles.card}>
+            <div className={styles.cardTitle}>{lang === "en" ? "License Terms" : "ข้อกำหนดสิทธิ์การใช้งาน"}</div>
+            <div className={styles.cardDesc}>
+              {lang === "en" ? "View or renew license." : "ดูหรือดำเนินการต่ออายุ"}
+            </div>
+            <div className={styles.row}>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setLicenseModal(true)}>
+                <FileText size={16} /> {lang === "en" ? "View" : "ดูรายละเอียด"}
+              </button>
+              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => alert("Renew (mock)")}>
+                <Download size={16} /> {lang === "en" ? "Renew" : "ต่ออายุ"}
+              </button>
+            </div>
+          </div>
+          <div className={styles.card}>
+            <div className={styles.cardTitle}>{lang === "en" ? "Technology Transfer" : "ถ่ายทอดเทคโนโลยี"}</div>
+            <div className={styles.cardDesc}>
+              {lang === "en" ? "Support for TT and collaboration." : "สนับสนุนการถ่ายทอดเทคโนโลยีและความร่วมมือ"}
+            </div>
+            <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => alert("Open TT module (mock)")}>
+              <Settings size={16} /> {lang === "en" ? "Open Module" : "เปิดโมดูล"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* AUDIT LOG */}
+      <div className={styles.section}>
+        <h2 className={styles.sectionTitle}>
+          <FileText size={18} /> {txt.audit}
+        </h2>
+        <div className={styles.tableBox}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>{lang === "en" ? "Action" : "การกระทำ"}</th>
+                <th>{lang === "en" ? "Timestamp" : "เวลา"}</th>
+                <th>{lang === "en" ? "View" : "ดู"}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((l) => (
+                <tr key={l.id}>
+                  <td>{l.user}</td>
+                  <td>{l.action}</td>
+                  <td>{l.timestamp}</td>
+                  <td>
+                    <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setViewLog(l)}>
+                      <FileText size={14} /> {lang === "en" ? "Detail" : "รายละเอียด"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ---------------- MODALS ---------------- */}
+
+      {/* Add user */}
+      {showAddUser && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBox}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalTitle}>{lang === "en" ? "Add User" : "เพิ่มผู้ใช้"}</div>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setShowAddUser(false)}>
+                <X size={16} />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <input
+                className={styles.input}
+                placeholder={lang === "en" ? "First name" : "ชื่อ"}
+                value={newUser.fname}
+                onChange={(e) => setNewUser((u) => ({ ...u, fname: e.target.value }))}
+              />
+              <input
+                className={styles.input}
+                placeholder={lang === "en" ? "Last name" : "นามสกุล"}
+                value={newUser.lname}
+                onChange={(e) => setNewUser((u) => ({ ...u, lname: e.target.value }))}
+              />
+              <input
+                className={styles.input}
+                placeholder="Email"
+                value={newUser.email}
+                onChange={(e) => setNewUser((u) => ({ ...u, email: e.target.value }))}
+              />
+              <select
+                className={styles.select}
+                value={newUser.role}
+                onChange={(e) =>
+                  setNewUser((u) => ({ ...u, role: e.target.value as User["role"] }))
+                }
+              >
+                {(["Admin","Doctor","MedTech","Pharmacist"] as RoleOption[]).map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setShowAddUser(false)}>
+                {txt.cancel}
+              </button>
+              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={saveNewUser}>
+                <Save size={16} /> {txt.save}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal: Edit */}
-      {showEditModal && (
+      {/* Edit user */}
+      {editUser && (
         <div className={styles.modalOverlay}>
-          <div className={styles.modal}>
-            <h3>{language === "en" ? "Edit User" : "แก้ไขผู้ใช้"}</h3>
-            {error && (
-              <p className={styles.errorText}>
-                <AlertCircle size={16} /> {error}
-              </p>
-            )}
-            <label>{language === "en" ? "First Name" : "ชื่อ"}</label>
-            <input
-              type="text"
-              value={selectedUser.firstName}
-              onChange={(e) =>
-                setSelectedUser({ ...selectedUser, firstName: e.target.value })
-              }
-              className={styles.input}
-            />
-            <label>{language === "en" ? "Last Name" : "นามสกุล"}</label>
-            <input
-              type="text"
-              value={selectedUser.lastName}
-              onChange={(e) =>
-                setSelectedUser({ ...selectedUser, lastName: e.target.value })
-              }
-              className={styles.input}
-            />
-            <label>Email</label>
-            <input
-              type="email"
-              value={selectedUser.email}
-              onChange={(e) =>
-                setSelectedUser({ ...selectedUser, email: e.target.value })
-              }
-              className={styles.input}
-            />
-            <label>{language === "en" ? "Password" : "รหัสผ่าน"}</label>
-            <input
-              type="text"
-              value={selectedUser.password}
-              onChange={(e) =>
-                setSelectedUser({ ...selectedUser, password: e.target.value })
-              }
-              className={styles.input}
-            />
-            <label>{language === "en" ? "Hospital" : "โรงพยาบาล"}</label>
-            <input
-              type="text"
-              value={selectedUser.hospital}
-              onChange={(e) =>
-                setSelectedUser({ ...selectedUser, hospital: e.target.value })
-              }
-              className={styles.input}
-            />
-            <label>{language === "en" ? "Role" : "บทบาท"}</label>
-            <select
-              value={selectedUser.role}
-              onChange={(e) =>
-                setSelectedUser({ ...selectedUser, role: e.target.value })
-              }
-              className={styles.select}
-            >
-              <option value="Physician">
-                {language === "en" ? "Physician" : "แพทย์"}
-              </option>
-              <option value="Pharmacist">
-                {language === "en" ? "Pharmacist" : "เภสัชกร"}
-              </option>
-              <option value="Data Entry">
-                {language === "en" ? "Data Entry" : "เจ้าหน้าที่บันทึกข้อมูล"}
-              </option>
-              <option value="Admin">
-                {language === "en" ? "Admin" : "ผู้ดูแลระบบ"}
-              </option>
-            </select>
+          <div className={styles.modalBox}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalTitle}>{lang === "en" ? "Edit User" : "แก้ไขผู้ใช้"}</div>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setEditUser(null)}>
+                <X size={16} />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <input
+                className={styles.input}
+                placeholder={lang === "en" ? "First name" : "ชื่อ"}
+                value={editUser.fname}
+                onChange={(e) => setEditUser({ ...editUser, fname: e.target.value })}
+              />
+              <input
+                className={styles.input}
+                placeholder={lang === "en" ? "Last name" : "นามสกุล"}
+                value={editUser.lname}
+                onChange={(e) => setEditUser({ ...editUser, lname: e.target.value })}
+              />
+              <input
+                className={styles.input}
+                placeholder="Email"
+                value={editUser.email}
+                onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
+              />
+              <select
+                className={styles.select}
+                value={editUser.role}
+                onChange={(e) =>
+                  setEditUser({ ...editUser, role: e.target.value as User["role"] })
+                }
+              >
+                {(["Admin","Doctor","MedTech","Pharmacist"] as RoleOption[]).map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setEditUser(null)}>
+                {txt.cancel}
+              </button>
+              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={saveEditUser}>
+                <Save size={16} /> {txt.save}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-            <div className={styles.modalButtons}>
-              <button onClick={handleSaveEdit} className={styles.saveBtn}>
-                <Save size={16} /> {language === "en" ? "Save" : "บันทึก"}
+      {/* Delete confirmation */}
+      {deleteUserId !== null && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBox}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalTitle}>{lang === "en" ? "Confirm delete" : "ยืนยันการลบ"}</div>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setDeleteUserId(null)}>
+                <X size={16} />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              {lang === "en" ? "Remove this user?" : "ต้องการลบผู้ใช้นี้หรือไม่?"}
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setDeleteUserId(null)}>
+                {txt.cancel}
+              </button>
+              <button className={`${styles.btn} ${styles.btnDanger}`} onClick={confirmDelete}>
+                <Trash2 size={16} /> {txt.delete}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PDPA config modal */}
+      {pdpaModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBox}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalTitle}>{pdpaMap[pdpaModal]}</div>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setPdpaModal(null)}>
+                <X size={16} />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <input
+                className={styles.input}
+                placeholder="Version"
+                value={pdpaConfig.version ?? ""}
+                onChange={(e) => setPdpaConfig((c) => ({ ...c, version: e.target.value }))}
+              />
+              <input
+                className={styles.input}
+                placeholder={lang === "en" ? "Purpose / Objective" : "วัตถุประสงค์"}
+                value={pdpaConfig.purpose ?? ""}
+                onChange={(e) => setPdpaConfig((c) => ({ ...c, purpose: e.target.value }))}
+              />
+              <input
+                className={styles.input}
+                placeholder={lang === "en" ? "Retention (days)" : "ระยะเวลาเก็บรักษา (วัน)"}
+                type="number"
+                value={pdpaConfig.retentionDays ?? 0}
+                onChange={(e) =>
+                  setPdpaConfig((c) => ({ ...c, retentionDays: Number(e.target.value) }))
+                }
+              />
+              <textarea
+                className={`${styles.textarea}`}
+                placeholder={lang === "en" ? "Notes" : "หมายเหตุ"}
+                value={pdpaConfig.note ?? ""}
+                onChange={(e) => setPdpaConfig((c) => ({ ...c, note: e.target.value }))}
+              />
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setPdpaModal(null)}>
+                {txt.cancel}
+              </button>
+              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={savePdpa}>
+                <Save size={16} /> {txt.save}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Integration modal */}
+      {integrationModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBox}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalTitle}>
+                {integrationModal === "his"
+                  ? "HIS/EMR"
+                  : integrationModal === "analyzer"
+                  ? "Analyzer"
+                  : "External API"}
+              </div>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setIntegrationModal(null)}>
+                <X size={16} />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <input
+                className={styles.input}
+                placeholder="Endpoint URL"
+                value={integrationForm.endpoint}
+                onChange={(e) => setIntegrationForm((f) => ({ ...f, endpoint: e.target.value }))}
+              />
+              <input
+                className={styles.input}
+                placeholder="Access Token"
+                value={integrationForm.token}
+                onChange={(e) => setIntegrationForm((f) => ({ ...f, token: e.target.value }))}
+              />
+              <div className={styles.badge}>Status: {integrationForm.status}</div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setIntegrationModal(null)}>
+                {txt.cancel}
+              </button>
+              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={saveIntegration}>
+                <Save size={16} /> {txt.save}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* System settings modal */}
+      {sysModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBox}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalTitle}>{txt.sys}</div>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setSysModal(false)}>
+                <X size={16} />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <input
+                type="file"
+                className={styles.input}
+                onChange={(e) => setLogoFile(e.target.files?.[0]?.name ?? "")}
+              />
+              {logoFile && <div className={styles.badge}>Logo: {logoFile}</div>}
+              <input
+                className={styles.input}
+                placeholder={lang === "en" ? "ISO Message" : "ข้อความ ISO"}
+                value={isoMessage}
+                onChange={(e) => setIsoMessage(e.target.value)}
+              />
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setSysModal(false)}>
+                {txt.cancel}
               </button>
               <button
-                onClick={() => setShowEditModal(false)}
-                className={styles.cancelBtn}
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                onClick={() => setSysModal(false)}
               >
-                <X size={16} /> {language === "en" ? "Cancel" : "ยกเลิก"}
+                <Save size={16} /> {txt.save}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* License modal */}
+      {licenseModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBox}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalTitle}>{lang === "en" ? "License Terms" : "ข้อกำหนดสิทธิ์การใช้งาน"}</div>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setLicenseModal(false)}>
+                <X size={16} />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <div style={{ lineHeight: 1.6 }}>
+                <strong>SWU-PGx</strong> — {lang === "en" ? "Internal-use license (mock)" : "สิทธิ์การใช้งานภายใน (จำลอง)"}<br/>
+                {lang === "en" ? "Not for commercial use. Redistribution prohibited." : "ห้ามใช้เชิงพาณิชย์และห้ามเผยแพร่ต่อ"}
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setLicenseModal(false)}>
+                {txt.cancel}
+              </button>
+              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => setLicenseModal(false)}>
+                <Download size={16} /> PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Audit view */}
+      {viewLog && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBox}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalTitle}>Audit</div>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setViewLog(null)}>
+                <X size={16} />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <div><strong>User:</strong> {viewLog.user}</div>
+              <div><strong>Action:</strong> {viewLog.action}</div>
+              <div><strong>Time:</strong> {viewLog.timestamp}</div>
+              <textarea
+                className={styles.textarea}
+                placeholder={lang === "en" ? "Comment (mock)" : "หมายเหตุ (จำลอง)"}
+              />
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setViewLog(null)}>
+                {txt.cancel}
+              </button>
+              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => setViewLog(null)}>
+                <Save size={16} /> {txt.save}
               </button>
             </div>
           </div>

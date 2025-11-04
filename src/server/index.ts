@@ -19,6 +19,7 @@ import cyp2c9Routes from "./routes/gene/cyp2c9";
 import hlabRoutes from "./routes/gene/hlab";
 import cyp2d6Routes from "./routes/gene/cyp2d6";
 import cyp2c19Routes from "./routes/gene/cyp2c19";
+import geneRoutes from "./routes/gene/gene";
 
 //result
 import resultRoutes from "./routes/result";
@@ -57,6 +58,7 @@ app.use("/api/hlab", hlabRoutes);
 app.use("/api/cyp2d6", cyp2d6Routes);
 app.use("/api/cyp2c9",cyp2c9Routes);
 app.use("/api/cyp2c19",cyp2c19Routes);
+app.use("/api/gene", geneRoutes);
 
 //result
 app.use("/api/results", resultRoutes);

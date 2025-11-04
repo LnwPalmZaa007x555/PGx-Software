@@ -1,34 +1,89 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { usePatients } from "@/context/PatientContext";
+import { useEffect, useMemo, useState } from "react";
+// import { usePatients } from "@/context/PatientContext"; // replaced by axios fetching
 import { genotypeMappings } from "@/utils/mappings";
 import { Search, Dna, Save } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import styles from "./page.module.css";
+import { fetchPatients, type PatientDto, updatePatientById } from "@/utils/patients";
+import { saveGeneResult } from "@/utils/gene";
 
 type MarkerValues = Record<string, string>;
 
+type PatientRow = {
+  recordId: number;
+  idCard: string;
+  firstName: string;
+  lastName: string;
+  sex: string;
+  phone: string;
+  ethnicity: "thai" | "other";
+  otherEthnicity?: string;
+  status: "pending_gene" | "pending_approve" | "approved";
+};
+
+function mapStatus(s: string): PatientRow["status"] {
+  const v = (s || "").toLowerCase();
+  if (v === "pending") return "pending_gene";
+  if (v === "pending approval") return "pending_approve";
+  if (v === "post-analytic" || v === "approved") return "approved";
+  return "pending_gene";
+}
+
+function toRows(items: PatientDto[]): PatientRow[] {
+  return items.map((p) => {
+    const isThai = (p.Ethnicity || "").trim().toLowerCase() === "thai";
+    return {
+      recordId: p.Patient_Id,
+      idCard: p.Id_Card,
+      firstName: p.Fname,
+      lastName: p.Lname,
+      sex: (p.Gender || "").toLowerCase(),
+      phone: p.Phone,
+      ethnicity: isThai ? "thai" : "other",
+      otherEthnicity: isThai ? undefined : p.Ethnicity,
+      status: mapStatus(p.status || ""),
+    };
+  });
+}
+
 export default function GenePage() {
-  const { patients, updatePatients } = usePatients();
+  // const { patients, updatePatients } = usePatients();
   const { language } = useLanguage();
 
   const [searchId, setSearchId] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null);
   const [gene, setGene] = useState("");
   const [markerValues, setMarkerValues] = useState<MarkerValues>({});
   const [genotype, setGenotype] = useState("");
   const [phenotype, setPhenotype] = useState("");
   const [recommendation, setRecommendation] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [patientList, setPatientList] = useState(patients);
+  const [patientList, setPatientList] = useState<PatientRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const items = await fetchPatients();
+        setPatientList(toRows(items));
+      } catch (e: any) {
+        setLoadError(e?.response?.data?.error || e?.message || "Failed to load patients");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   // 🧠 Filter pending patients
   const pendingPatients = useMemo(() => {
     const list = patientList.filter(
       (p) =>
         p.status === "pending_gene" &&
-        p.idCard.includes(searchId.trim())
+        (p.idCard || "").includes(searchId.trim())
     );
     return list.slice().reverse();
   }, [patientList, searchId]);
@@ -37,6 +92,7 @@ export default function GenePage() {
   const handleSelectPatient = (idCard: string) => {
     if (selectedId === idCard) {
       setSelectedId(null);
+      setSelectedRecordId(null);
       setGene("");
       setMarkerValues({});
       setGenotype("");
@@ -46,6 +102,8 @@ export default function GenePage() {
       return;
     }
     setSelectedId(idCard);
+    const row = patientList.find(p => p.idCard === idCard) || null;
+    setSelectedRecordId(row ? row.recordId : null);
     setGene("");
     setMarkerValues({});
     setGenotype("");
@@ -119,7 +177,7 @@ export default function GenePage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
@@ -137,35 +195,33 @@ export default function GenePage() {
         ? found?.recommendation_en || found?.recommendation || ""
         : found?.recommendation_th || found?.recommendation || "";
 
-    const updated = patientList.map((p) =>
-      p.idCard === selectedId
-        ? {
-            ...p,
-            gene,
-            markerValues,
-            genotype: computedGenotype,
-            phenotype: computedPhenotype,
-            recommendation: computedRecommendation,
-            status: "pending_approve" as const,
-          }
-        : p
-    );
+    try {
+      // 1) Save to Result via backend gene endpoint
+      if (!gene) throw new Error("Gene is required");
+      if (selectedRecordId == null) throw new Error("No patient selected");
 
-    updatePatients(updated);
-    localStorage.setItem("patients", JSON.stringify(updated));
+      await saveGeneResult(gene as any, selectedRecordId, markerValues);
 
-    alert(
-      language === "en"
-        ? "✅ Gene information saved successfully!"
-        : "✅ บันทึกข้อมูลยีนสำเร็จแล้ว!"
-    );
+      // 2) Update Patient status to Pending approval
+      await updatePatientById(selectedRecordId, { status: "Pending approval" });
+      setPatientList(prev => prev.map(p => p.recordId === selectedRecordId ? { ...p, status: "pending_approve" } : p));
 
-    setSelectedId(null);
-    setGene("");
-    setMarkerValues({});
-    setGenotype("");
-    setPhenotype("");
-    setRecommendation("");
+      alert(
+        language === "en"
+          ? "✅ Gene information saved successfully!"
+          : "✅ บันทึกข้อมูลยีนสำเร็จแล้ว!"
+      );
+
+      setSelectedId(null);
+      setSelectedRecordId(null);
+      setGene("");
+      setMarkerValues({});
+      setGenotype("");
+      setPhenotype("");
+      setRecommendation("");
+    } catch (err: any) {
+      alert(err?.response?.data?.error || err?.message || (language === "en" ? "Save failed" : "บันทึกล้มเหลว"));
+    }
   };
 
   // ---------------- Render ----------------
@@ -214,7 +270,9 @@ export default function GenePage() {
               </button>
             </div>
 
-            {pendingPatients.length === 0 ? (
+            {loading ? (
+              <p>Loading…</p>
+            ) : pendingPatients.length === 0 ? (
               <p>
                 {language === "en"
                   ? "No pending patients found."

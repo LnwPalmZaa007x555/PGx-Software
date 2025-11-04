@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import { supabase } from "../../supabaseClient";
-import { CYP2C19 } from "@/server/types/gene/cyp2c19";
-import { newCYP2C19Schema, updateCYP2C19Schema } from "@/server/schemas/gene/cyp2c19";
-import { newResultSchema } from "@/server/schemas/result.schema";
-import { NewResult } from "@/server/types/result";
-import { PK_FIELD_BY_TABLE } from "@/server/util/constant";
+import { CYP2C19 } from "../../types/gene/cyp2c19";
+import { newCYP2C19Schema, updateCYP2C19Schema } from "../../schemas/gene/cyp2c19";
+import { newResultSchema } from "../../schemas/result.schema";
+import { NewResult } from "../../types/result";
+import { PK_FIELD_BY_TABLE } from "../../util/constant";
 
 
 // get / api/cyp2c19

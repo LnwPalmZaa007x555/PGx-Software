@@ -14,6 +14,11 @@ import {
   X,
   Dna,
   ShieldUser,
+  FlaskConical,
+  BookOpen,
+  BarChart3,
+  Database,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import styles from "./Sidebar.module.css";
@@ -37,43 +42,59 @@ const Sidebar = ({
     router.push("/login");
   };
 
-  // 🌍 เมนูรองรับ 2 ภาษา
+  // 🌍 เมนูหลักของ PGx Platform
   const menu = [
     {
-      name: language === "en" ? "Dashboard" : "ภาพรวมระบบ",
+      name: language === "en" ? "Dashboard" : "หน้าหลัก",
       path: "/dashboard",
       icon: <LayoutDashboard size={22} />,
     },
     {
-      name: language === "en" ? "Admin" : "ผู้ดูแลระบบ",
-      path: "/admin",
-      icon: <ShieldUser size={22} />,
-    },
-    {
-      name: language === "en" ? "Patients" : "ข้อมูลผู้ป่วย",
-      path: "/patient",
+      name: language === "en" ? "Case Management" : "การจัดการเคส",
+      path: "/case",
       icon: <Users size={22} />,
     },
     {
-      name: language === "en" ? "Gene Selection" : "เลือกยีน",
+      name: language === "en" ? "Gene Entry" : "กรอกข้อมูลยีน",
       path: "/gene",
       icon: <Dna size={22} />,
     },
-    {
-      name: language === "en" ? "Approve" : "อนุมัติผล",
+        {
+      name: language === "en" ? "Approve" : "กรอกข้อมูลยีน",
       path: "/approve",
       icon: <ClipboardCheck size={22} />,
     },
     {
-      name: language === "en" ? "Reports" : "รายงาน",
+      name: language === "en" ? "Specimen Accessioning" : "รับสิ่งส่งตรวจ",
+      path: "/specimen",
+      icon: <FlaskConical size={22} />,
+    },
+    {
+      name: language === "en" ? "Knowledge & Info" : "คลังข้อมูล",
+      path: "/knowledge",
+      icon: <BookOpen size={22} />,
+    },
+    {
+      name: language === "en" ? "QC & Training" : "ควบคุมคุณภาพและอบรม",
+      path: "/qc",
+      icon: <Database size={22} />,
+    },
+    {
+      name: language === "en" ? "Reports & Analytics" : "รายงานและสถิติ",
       path: "/reports",
-      icon: <FileText size={22} />,
+      icon: <BarChart3 size={22} />,
+    },
+    {
+      name: language === "en" ? "Admin Panel" : "การตั้งค่าระบบ",
+      path: "/admin",
+      icon: <ShieldUser size={22} />,
     },
     {
       name: language === "en" ? "Settings" : "การตั้งค่า",
       path: "/settings",
       icon: <Settings size={22} />,
     },
+
   ];
 
   return (

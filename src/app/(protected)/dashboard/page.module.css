@@ -18,215 +18,176 @@
   margin-bottom: 1.5rem;
 }
 
-/* Summary Cards */
-.cards {
+/* ===== Quick Access ===== */
+.quickAccess {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.actionBtn {
+  font-size: 1rem;
+  background: #4ca771;
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  text-decoration: none;
+}
+
+.actionBtn:hover {
+  background: #3a8e60;
+}
+
+/* ===== Search Box ===== */
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #ffffff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  flex-grow: 1;
+  max-width: 320px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.searchBox input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  padding-left: 0.4rem;
+  font-size: 0.9rem;
+  color: #000000;
+}
+
+.searchBox input:focus {
+  border-color: #4ca771;
+  box-shadow: 0 0 0 2px rgba(76, 167, 113, 0.2);
+}
+
+/* ===== Dashboard Stats ===== */
+.statsSection {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
 }
 
-.card {
+.statCard {
+  background: #fff;
   border-radius: 12px;
   padding: 1rem;
-  text-align: center;
-  font-weight: bold;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
-.card h3 {
-  margin: 0;
-  font-size: 1rem;
+.statNumber {
+  font-size: 1.6rem;
+  font-weight: 800;
   color: #013237;
 }
 
-.number {
-  font-size: 1.5rem;
-  font-weight: 800;
+.statCard h3 {
+  font-size: 1rem;
   color: #013237;
   margin-top: 0.5rem;
 }
 
-.total { background: #c0e6ba; }
-.pendingGene { background: #e55353; color: #fff; }
-.pendingApprove { background: #f4b400; color: #fff; }
-.approved { background: #2b9348; color: #fff; }
-
-/* Chart + Controls */
-.topRow {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+.statCard span {
+  font-weight: bold;
+  color: #4ca771;
 }
 
-.chartBox {
+/* ===== Sections ===== */
+.section {
   background: #fff;
   border-radius: 12px;
-  padding: 1rem;
-  text-align: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
-.controls {
+.sectionHeader {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.filterGroup {
-  display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
+  margin-bottom: 0.8rem;
 }
 
-.filterBtn {
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  border: 1px solid #4ca771;
-  background: transparent;
-  cursor: pointer;
+.sectionHeader h2 {
+  font-size: 1.1rem;
   font-weight: bold;
   color: #013237;
 }
 
-.activeFilter {
-  background: #4ca771;
-  color: #fff;
-}
-
-.searchBar {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.searchInput {
-  padding: 0.6rem 0.8rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  width: 220px;
-}
-
-.searchButton,
-.exportBtn {
-  background: #4ca771;
-  border: none;
-  color: #fff;
-  padding: 0.6rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-}
-
-.exportBtn {
-  align-self: flex-start;
-}
-
-/* Table */
-.tableBox {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
-  padding: 1rem;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.table th {
-  text-align: left;
-  color: #013237;
-  border-bottom: 2px solid #4ca771;
-  padding: 10px;
-}
-
-.table td {
-  padding: 10px;
-  border-bottom: 1px solid #dcdcdc;
-}
-
-.statusBadge {
-  padding: 0.2rem 0.5rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  color: white;
-}
-
-.statusPending { background: #e55353; }
-.statusReview { background: #f4b400; }
-.statusApproved { background: #2b9348; }
-
-/* Activity Log */
-.activityBox {
-  margin-top: 2rem;
-  background: #fff;
-  border-radius: 12px;
-  padding: 1.25rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
-}
-
-.activityList {
+.list {
   list-style: none;
+  margin: 0;
   padding: 0;
-  margin-top: 1rem;
-  color: #013237;
-  font-size: 0.9rem;
 }
 
-/* 🌙 DARK MODE */
+.list li {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #e0e0e0;
+  font-size: 0.9rem;
+  color: #013237;
+}
+
+/* ===== DARK MODE ===== */
 :global(html.dark) .container {
   background: #0d1117;
-  color: #fafafa;
+  color: #e6edf3;
 }
 
-:global(html.dark) .title { color: #ffffff; }
-:global(html.dark) .subtitle { color: #b9c4d0; }
+:global(html.dark) .title {
+  color: #e6edf3;
+}
 
-:global(html.dark) .chartBox,
-:global(html.dark) .tableBox,
-:global(html.dark) .activityBox {
+:global(html.dark) .subtitle {
+  color: #8b949e;
+}
+
+:global(html.dark) .statCard,
+:global(html.dark) .section {
   background: #161b22;
-  color: #fafafa;
+  color: #e6edf3;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 
-:global(html.dark) .table th {
-  color: #ffffff;
-  border-bottom: 2px solid #4ca771;
-}
-
-:global(html.dark) .activityList {
-  color: #ffffff;
-}
-
-:global(html.dark) .table td {
-  color: #e6edf3;
-  border-bottom: 1px solid #2a323d;
-}
-
-:global(html.dark) .filterBtn {
-  border-color: #4ca771;
+:global(html.dark) .statCard h3,
+:global(html.dark) .sectionHeader h2,
+:global(html.dark) .list li {
   color: #e6edf3;
 }
 
-:global(html.dark) .activeFilter {
+:global(html.dark) .statCard span {
+  color: #4ca771;
+}
+
+:global(html.dark) .actionBtn {
   background: #2f8a5a;
-  border-color: #2f8a5a;
+  color: #fff;
 }
 
-:global(html.dark) .searchInput {
+:global(html.dark) .actionBtn:hover {
+  background: #256349;
+}
+
+:global(html.dark) .searchBox {
   background: #0d1117;
-  border: 1px solid #3a3f45;
-  color: #ffffff;
+  border: 1px solid #2a2f35;
 }
 
-:global(html.dark) .searchButton,
-:global(html.dark) .exportBtn {
-  background: #2f8a5a;
-  color: #ffffff;
+:global(html.dark) .searchBox input {
+  color: #e6edf3;
 }

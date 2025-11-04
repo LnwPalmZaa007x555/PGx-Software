@@ -1,0 +1,119 @@
+.container {
+  padding: 4rem;
+  background: #eaf9e7;
+  min-height: 100vh;
+  font-family: "Inter", Arial, sans-serif;
+}
+
+.title {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #013237;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #4ca771;
+  margin-bottom: 1.25rem;
+}
+
+/* Section */
+.section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.4rem;
+  margin-bottom: 1.2rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #013237;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Search bar */
+.searchBar {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+.input, .select {
+  padding: 0.6rem 0.7rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fff;
+  flex: 1;
+}
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+.btnPrimary { background: #4ca771; color: #fff; }
+.btnGhost { background: #e9f7ef; color: #0b5e3c; border: 1px solid #cce8cc; }
+
+/* Table */
+.tableBox { overflow-x: auto; }
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.table th, .table td {
+  padding: 0.6rem;
+  border-bottom: 1px solid #e0e0e0;
+  text-align: left;
+}
+.table th {
+  color: #013237;
+  border-bottom: 2px solid #4ca771;
+}
+
+/* Form */
+.formGrid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-bottom: 0.8rem;
+}
+
+/* Training log table status */
+.status {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.statusDone {
+  background: #ebfff2;
+  color: #0b5e3c;
+  border: 1px solid #b9e6c9;
+}
+.statusPending {
+  background: #fff5f5;
+  color: #b52d2d;
+  border: 1px solid #f2bcbc;
+}
+
+/* Dark mode */
+:global(html.dark) .container { background: #0d1117; color: #e6edf3; }
+:global(html.dark) .section { background: #161b22; color: #e6edf3; }
+:global(html.dark) .table th { color: #e6edf3; border-color: #2a2f35; }
+:global(html.dark) .table td { border-color: #2a2f35; }
+:global(html.dark) .input, :global(html.dark) .select {
+  background: #0d1117; color: #e6edf3; border: 1px solid #2a2f35;
+}
+:global(html.dark) .btnPrimary { background: #2f8a5a; }
+:global(html.dark) .btnGhost { background: #0f1512; border-color: #244a34; color: #a6e3bf; }
+:global(html.dark) .banner { background: #0f1512; border-color: #244a34; }
+:global(html.dark) .badge { background: #0f1512; border-color: #244a34; color: #a6e3bf; }

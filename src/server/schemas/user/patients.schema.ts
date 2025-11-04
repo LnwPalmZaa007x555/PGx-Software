@@ -9,6 +9,10 @@ export const newPatientSchema = z.object({
   Phone: z.string().min(1),
   Id_Card: z.string().min(1),
   Ethnicity: z.string().min(1),
+  status: z.string().min(1).default("pending"),
+  create_at: z.string().optional(),
+  // allow null or omit for non-approved states
+  approve_at: z.string().nullable().optional(),
 }).strict();
 
 export const updatePatientSchema = newPatientSchema.partial().strict();

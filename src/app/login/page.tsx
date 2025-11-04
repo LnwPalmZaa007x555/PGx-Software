@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
+import { loginRequest } from "@/utils/auth";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -12,7 +13,7 @@ export default function LoginPage() {
   const router = useRouter();
   const passwordRef = useRef<HTMLInputElement>(null); // ref สำหรับช่อง password
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const newErrors: { email?: string; password?: string } = {};
 
@@ -29,7 +30,15 @@ export default function LoginPage() {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      router.push("/dashboard"); // mock redirect
+      try {
+        await loginRequest(email, password);
+        router.push("/dashboard");
+      } catch (err: any) {
+        const msg = err?.response?.data?.error || err?.message || "Login failed";
+        setErrors({ password: msg });
+        //palm1@example.com
+        //secretpass123
+      }
     }
   };
 

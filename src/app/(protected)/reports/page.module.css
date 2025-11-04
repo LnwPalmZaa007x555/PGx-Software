@@ -1,182 +1,138 @@
-/* ===================== BASE LAYOUT ===================== */
 .container {
   padding: 4rem;
   background: #eaf9e7;
   min-height: 100vh;
   font-family: "Inter", Arial, sans-serif;
-  transition: background 0.3s ease, color 0.3s ease;
 }
 
 .title {
-  font-size: 1.7rem;
-  font-weight: 700;
+  font-size: 1.6rem;
+  font-weight: 600;
   color: #013237;
-  margin-bottom: 0.3rem;
 }
 
 .subtitle {
   font-size: 1rem;
   color: #4ca771;
-  margin-bottom: 1.8rem;
+  margin-bottom: 1.25rem;
 }
 
-/* ===================== TOP CONTROLS ===================== */
-.topBar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.searchBar {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.searchInput {
-  padding: 0.6rem 0.8rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  width: 240px;
-  font-size: 0.95rem;
-  outline: none;
-  transition: 0.2s;
-}
-
-.searchInput:focus {
-  border-color: #4ca771;
-  box-shadow: 0 0 0 2px rgba(76, 167, 113, 0.2);
-}
-
-.searchButton {
-  background: #4ca771;
-  border: none;
-  color: #fff;
-  padding: 0.6rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s ease;
-}
-
-.searchButton:hover {
-  background: #000000;
-}
-
-
-/* ===================== TABLE ===================== */
-.tableBox {
+/* Section */
+.section {
   background: #fff;
   border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
-  padding: 1rem 1.2rem;
-  overflow-x: auto;
+  padding: 1.4rem;
+  margin-bottom: 1.2rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #013237;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
+/* Cards */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+.card {
+  background: #f7fff8;
+  border: 1px solid #cce8cc;
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+}
+.cardLabel {
+  font-size: 0.8rem;
+  color: #4ca771;
+}
+.cardValue {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #013237;
+}
+
+/* Progress */
+.progressBar {
+  width: 100%;
+  height: 10px;
+  border-radius: 10px;
+  background: #dcefe3;
+  overflow: hidden;
+  margin-top: 6px;
+}
+.progressFill {
+  height: 100%;
+  background: #4ca771;
+}
+
+/* Export */
+.exportBar {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+.select, .input {
+  padding: 0.55rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fff;
+}
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+.btnPrimary { background: #4ca771; color: #fff; }
+.btnGhost { background: #e9f7ef; color: #0b5e3c; border: 1px solid #cce8cc; }
+
+/* Table */
+.tableBox { overflow-x: auto; }
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
-
-.table th {
+.table th, .table td {
+  padding: 0.6rem;
+  border-bottom: 1px solid #e0e0e0;
   text-align: left;
+}
+.table th {
   color: #013237;
   border-bottom: 2px solid #4ca771;
-  padding: 12px 10px;
-  white-space: nowrap;
 }
 
-.table td {
-  padding: 10px;
-  border-bottom: 1px solid #dcdcdc;
-  vertical-align: middle;
+/* Charts */
+.chartRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
 }
 
-/* ============ NAME CELL + EXPORT BUTTON ============ */
-.nameCell {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-weight: 500;
+/* Dark mode */
+:global(html.dark) .container { background: #0d1117; color: #e6edf3; }
+:global(html.dark) .section { background: #161b22; color: #e6edf3; }
+:global(html.dark) .table th { color: #e6edf3; border-color: #2a2f35; }
+:global(html.dark) .table td { border-color: #2a2f35; }
+:global(html.dark) .input, :global(html.dark) .select {
+  background: #0d1117; color: #e6edf3; border: 1px solid #2a2f35;
 }
-
-.exportBtnSmall {
-  background-color: #4ca771;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  padding: 0.3rem 0.7rem;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.exportBtnSmall:hover {
-  background-color: #3f8e62;
-}
-
-/* ===================== STATUS BADGE ===================== */
-.statusApproved {
-  background: #2b9348;
-  color: #fff;
-  padding: 0.3rem 0.7rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  text-transform: capitalize;
-  display: inline-block;
-}
-
-/* ===================== DARK MODE ===================== */
-:global(html.dark) .container {
-  background: #0d1117;
-  color: #fafafa;
-}
-
-:global(html.dark) .title {
-  color: #ffffff;
-}
-
-:global(html.dark) .subtitle {
-  color: #b9c4d0;
-}
-
-:global(html.dark) .tableBox {
-  background: #161b22;
-  color: #fafafa;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
-}
-
-:global(html.dark) .table th {
-  color: #ffffff;
-  border-bottom: 2px solid #4ca771;
-}
-
-:global(html.dark) .table td {
-  color: #e6edf3;
-  border-bottom: 1px solid #2a323d;
-}
-
-:global(html.dark) .searchInput {
-  background: #0d1117;
-  border: 1px solid #3a3f45;
-  color: #ffffff;
-}
-
-:global(html.dark) .searchButton,
-:global(html.dark) .exportBtn,
-:global(html.dark) .pdfBtn,
-:global(html.dark) .exportBtnSmall {
-  background: #2f8a5a;
-  color: #ffffff;
-}
-
-:global(html.dark) .exportBtnSmall:hover {
-  background: #3fae76;
-}
+:global(html.dark) .btnPrimary { background: #2f8a5a; }
+:global(html.dark) .btnGhost { background: #0f1512; border-color: #244a34; color: #a6e3bf; }
+:global(html.dark) .banner { background: #0f1512; border-color: #244a34; }
+:global(html.dark) .badge { background: #0f1512; border-color: #244a34; color: #a6e3bf; }

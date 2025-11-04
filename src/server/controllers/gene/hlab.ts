@@ -2,9 +2,9 @@ import { Request, Response } from "express";
 import { supabase } from "../../supabaseClient";
 import { HLAB, NewHLAB, UpdateHLAB } from "../../types/gene/hlab";
 import { newHLABSchema, updateHLABSchema } from "../../schemas/gene/hlab.schema";
-import { newResultSchema } from "@/server/schemas/result.schema";
-import { NewResult } from "@/server/types/result";
-import { PK_FIELD_BY_TABLE } from "@/server/util/constant";
+import { newResultSchema } from "../../schemas/result.schema";
+import { NewResult } from "../../types/result";
+import { PK_FIELD_BY_TABLE } from "../../util/constant";
 
 // GET /api/hlab
 export async function getHLAB(_req: Request, res: Response) {
@@ -107,89 +107,108 @@ export async function deleteHLABById(req: Request, res: Response) {
 
 // บอกให้เชี่ยนิวแก้ supabase
 export async function saveToResult(req: Request, res: Response) {
-    const geneid = Number(req.body?.geneid);
-    const patientId = Number(req.body?.Patient_Id);
-    const staffId = Number(req.body?.staff_id);
+  const geneid    = Number(req.body?.geneid);
+  const patientId = Number(req.body?.Patient_Id);
+  const staffId   = Number(req.body?.staff_id);
+  const statusRaw = String(req.body?.status || "").trim(); // "Positive" | "Negative"
+  const hlaGene   = String(req.body?.HLA_Gene || req.body?.hla_gene || "").trim(); // ← รับจาก body
 
-    if (!Number.isFinite(geneid)) return res.status(400).json({ error: "Invalid geneid (must be a number)" });
-    if (!Number.isFinite(patientId)) return res.status(400).json({ error: "Invalid Patient_Id (must be a number)" });
-    if (!Number.isFinite(staffId)) return res.status(400).json({ error: "Invalid staff_id (must be a number)" });  
+  if (!Number.isFinite(geneid))    return res.status(400).json({ error: "Invalid geneid (must be a number)" });
+  if (!Number.isFinite(patientId)) return res.status(400).json({ error: "Invalid Patient_Id (must be a number)" });
+  if (!Number.isFinite(staffId))   return res.status(400).json({ error: "Invalid staff_id (must be a number)" });
+  if (!statusRaw)                  return res.status(400).json({ error: "status is required (Positive/Negative)" });
+  if (!hlaGene)                    return res.status(400).json({ error: "HLA_Gene is required" });
 
-    try {
-        const { data: geneRows, error: geneError } = await supabase
-          .from("Gene")
-          .select("gene_name")
-          .eq("gene_id", geneid)
-          .limit(1)
+  // ปรับให้ตรงกับค่าที่เก็บใน DB (ขึ้นอยู่กับคุณว่าเก็บ P/N ยังไง)
+  const status = statusRaw === "positive" ? "Positive"
+               : statusRaw === "negative" ? "Negative"
+               : statusRaw;
 
-          if (geneError) return res.status(500).json({ error: geneError.message });
-          if (!geneRows?.length) return res.status(400).json({ error: "Gene not found" });
+  try {
+    // 1) หาชื่อตารางจาก Gene
+    const { data: geneRows, error: geneError } = await supabase
+      .from("Gene")
+      .select("gene_name")
+      .eq("gene_id", geneid)
+      .limit(1);
 
-          const geneName = geneRows[0].gene_name as string;
-             const pkField = PK_FIELD_BY_TABLE[geneName];
-        if (!pkField) return res.status(400).json({ error: `Unsupported gene table: ${geneName}` });
+    if (geneError)      return res.status(500).json({ error: geneError.message });
+    if (!geneRows?.[0]) return res.status(400).json({ error: "Gene not found" });
 
-        const { data: geneRow, error: tableErr} = await supabase
-            .from(geneName)
-            .select("*")
-            .eq("CYP3A5x3_6986A", req.body.CYP3A5x3_6986A)
-            .single();
-          
-        if (tableErr) return res.status(500).json({ error: tableErr.message });
-        if (!geneRow) return res.status(404).json({ error: "No matching gene record found" });
+    const geneName = geneRows[0].gene_name as string; // คาดว่า "HLA_B"
+    const pkField  = PK_FIELD_BY_TABLE[geneName];     // HLA_B => "HLA_B_Id"
+    if (!pkField) return res.status(400).json({ error: `Unsupported gene table: ${geneName}` });
 
-        const gene_information = Number((geneRow as any)[pkField]);
-        
-        if (!Number.isFinite(gene_information)) {
-            return res.status(500).json({error: `Primary  key field "${pkField}" not found in ${geneName} row` });
-        }
+    // 2) หาข้อมูล HLA_B ตาม HLA_Gene + status
+    const { data: geneRow, error: tableErr } = await supabase
+      .from(geneName)
+      .select("*")
+      .eq("HLA_Gene", hlaGene)
+      .eq("status", status)
+      .maybeSingle();         // ← ใช้ maybeSingle ป้องกัน error “Cannot coerce...”
+      console.log(hlaGene, status);
+      console.log(geneRow);
+    if (tableErr)  return res.status(500).json({ error: tableErr.message });
+    if (!geneRow)  return res.status(404).json({ error: "No HLA_B record found for provided HLA_Gene & status" });
 
-        const createResult = {
-            Requested_date: new Date().toISOString(),
-            Patient_Id: patientId,
-            status: "pending",
-            Reported_date: null,
-            gene_id: geneid,
-            gene_information,
-            staff_id: staffId,
-        };
-        const { body: payload} = newResultSchema.parse({ body: createResult }) as { body: NewResult};
-
-        const { data: resultRow, error: insertErr } = await supabase
-            .from("Result")
-            .insert(payload)
-            .select("*")
-            .single()
-
-            if (insertErr) return res.status(500).json({ error: insertErr.message });
-
-            const { data: enriched, error: enrichErr } = await supabase
-                .from("Result")
-                .select(`
-            Result_Id,
-            Requested_date,
-            status,
-            Patient_Id,
-            gene_id,
-            gene_information,
-            staff:Staff!inner(Staff_Id, Role, Fname, Lname, Hospital_Name)
-            `)
-            .eq("Result_Id", resultRow.Result_Id)
-            .single();
-
-            if (enrichErr) return res.status(500).json({ error: enrichErr.message });
-
-            const response = { 
-                ...enriched,
-                gene_meta:{
-                    gene_name: geneName,
-                    predict_pheno: (geneRow as any).Predict_Pheno ?? null,
-                    recommend: (geneRow as any).Recommend ?? null,
-                },
-            }
-            return res.status(201).json(response);
-    } catch (e : any) {
-        console.error("[saveToResult ERROR]", e);
-        return res.status(500).json({ error: String(e?.message || e) });
+    console.log(geneRow);
+    const gene_information = Number((geneRow as any)[pkField]);
+    if (!Number.isFinite(gene_information)) {
+      return res.status(500).json({ error: `Primary key field "${pkField}" not found in ${geneName} row` });
     }
+console.log(gene_information);
+    // 3) เตรียม payload ใส่ Result
+    const createResult = {
+      Requested_date: new Date().toISOString(),
+      Patient_Id: patientId,
+      status: "pending",
+      Reported_date: null,
+      gene_id: geneid,
+      gene_information,
+      staff_id: staffId,
+    };
+    const { body: payload } = newResultSchema.parse({ body: createResult }) as { body: NewResult };
+
+    // 4) INSERT Result
+    const { data: resultRow, error: insertErr } = await supabase
+      .from("Result")
+      .insert(payload)
+      .select("*")
+      .single();
+
+    if (insertErr) return res.status(500).json({ error: insertErr.message });
+
+    // 5) ดึง Result + Staff
+    const { data: enriched, error: enrichErr } = await supabase
+      .from("Result")
+      .select(`
+        Result_Id,
+        Requested_date,
+        status,
+        Patient_Id,
+        gene_id,
+        gene_information,
+        staff:Staff!inner(Staff_Id, Role, Fname, Lname, Hospital_Name)
+      `)
+      .eq("Result_Id", resultRow.Result_Id)
+      .single();
+
+    if (enrichErr) return res.status(500).json({ error: enrichErr.message });
+
+    // 6) รวมข้อมูลตีความจาก HLA_B (สคีมาใหม่ใช้ phenotype/recommend)
+    const response = {
+      ...enriched,
+      gene_meta: {
+        gene_name: geneName,
+        hla_gene: hlaGene,
+        status,
+        phenotype: (geneRow as any).phenotype ?? null,
+        recommend: (geneRow as any).recommend ?? null,
+      },
+    };
+    return res.status(201).json(response);
+  } catch (e: any) {
+    console.error("[saveToResult ERROR]", e);
+    return res.status(500).json({ error: String(e?.message || e) });
+  }
 }

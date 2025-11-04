@@ -2,9 +2,9 @@ import { Request, Response } from "express";
 import { supabase } from "../../supabaseClient";
 import { NewVKORC1, UpdateVKORC1, VKORC1 } from "../../types/gene/vkorc1";
 import { newVKORC1Schema, updateVKORC1Schema } from "../../schemas/gene/vkorc1.schema";
-import { newResultSchema } from "@/server/schemas/result.schema";
-import { NewResult } from "@/server/types/result";
-import { PK_FIELD_BY_TABLE } from "@/server/util/constant";
+import { newResultSchema } from "../../schemas/result.schema";
+import { NewResult } from "../../types/result";
+import { PK_FIELD_BY_TABLE } from "../../util/constant";
 
 // GET /api/vkorc1
 export async function getVKORC1(_req: Request, res: Response) {

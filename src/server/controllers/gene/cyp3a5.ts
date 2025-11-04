@@ -2,9 +2,9 @@ import { Request, Response } from "express";
 import { supabase } from "../../supabaseClient";
 import { CYP3A5, NewCYP3A5, UpdateCYP3A5 } from "../../types/gene/cyp3a5";
 import { newCYP3A5Schema, updateCYP3A5Schema } from "../../schemas/gene/cyp3a5.schema";
-import { newResultSchema } from "@/server/schemas/result.schema";
-import { NewResult } from "@/server/types/result";
-import { PK_FIELD_BY_TABLE } from "@/server/util/constant";
+import { newResultSchema } from "../../schemas/result.schema";
+import { NewResult } from "../../types/result";
+import { PK_FIELD_BY_TABLE } from "../../util/constant";
 
 // GET /api/cyp3a5
 export async function getCYP3A5(_req: Request, res: Response) {

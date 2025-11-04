@@ -5,7 +5,7 @@ import { z } from "zod";
 const id = z.coerce.number().int().positive();
 
 // สถานะ แนะนำค่าเหล่านี้ (ถ้าใช้อิสระเป็น string ก็เปลี่ยนเป็น z.string().min(1) ได้)
-const statusEnum = z.enum(["pending", "processing", "completed", "reviewed"]);
+const statusEnum = z.enum(["pending", "processing", "completed", "reviewed", "rejected"]);
 
 export const newResultSchema = z.object({
   body: z.object({

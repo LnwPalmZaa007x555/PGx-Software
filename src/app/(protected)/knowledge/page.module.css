@@ -1,0 +1,134 @@
+.container {
+  padding: 4rem;
+  background: #eaf9e7;
+  min-height: 100vh;
+  font-family: "Inter", Arial, sans-serif;
+}
+
+.title {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #013237;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #4ca771;
+  margin-bottom: 1.25rem;
+}
+
+/* Section */
+.section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.4rem;
+  margin-bottom: 1.2rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #013237;
+  margin-bottom: 0.75rem;
+}
+
+/* Table */
+.tableBox { overflow-x: auto; }
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.table th, .table td {
+  padding: 0.6rem;
+  border-bottom: 1px solid #e0e0e0;
+  text-align: left;
+  vertical-align: top;
+}
+.table th {
+  color: #013237;
+  border-bottom: 2px solid #4ca771;
+}
+
+/* Buttons */
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+.btnPrimary { background: #4ca771; color: #fff; }
+.btnGhost {
+  background: #e9f7ef; color: #0b5e3c; border: 1px solid #cce8cc;
+}
+.iconBtn {
+  border: none; background: transparent; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; color: #0b5e3c;
+}
+
+/* HLA Alert cards */
+.alertGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.8rem;
+}
+.alertCard {
+  background: #fffdf5;
+  border: 1px solid #ffecb3;
+  border-left: 6px solid #ffb300;
+  border-radius: 10px;
+  padding: 0.9rem;
+}
+.alertHead {
+  display: flex; align-items: center; gap: 0.5rem; font-weight: 700;
+}
+
+/* Dose table pills */
+.pill {
+  display: inline-flex; padding: 0.2rem 0.55rem; border-radius: 999px;
+  font-size: 0.75rem; border: 1px solid #cce8cc; background: #f4fff4; color: #2f6f43;
+}
+
+/* Articles */
+.toolbar {
+  display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;
+  margin-bottom: 0.8rem;
+}
+.input, .select {
+  padding: 0.55rem 0.6rem; border: 1px solid #ccc; border-radius: 8px;
+  background: #fff; font-size: 0.9rem;
+}
+.cardGrid {
+  display: grid; gap: 0.8rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+.card {
+  background: #f7fff8;
+  border: 1px solid #cce8cc;
+  border-radius: 12px;
+  padding: 1rem;
+}
+.cardTitle { font-weight: 800; color: #013237; margin-bottom: 0.25rem; }
+.cardMeta { font-size: 0.8rem; color: #4ca771; margin-bottom: 0.5rem; }
+.cardActions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.muted { color: #6b7280; }
+
+/* Dark mode */
+:global(html.dark) .container { background: #0d1117; color: #e6edf3; }
+:global(html.dark) .section { background: #161b22; color: #e6edf3; }
+:global(html.dark) .table th { color: #e6edf3; border-color: #2a2f35; }
+:global(html.dark) .table td { border-color: #2a2f35; }
+:global(html.dark) .input, :global(html.dark) .select {
+  background: #0d1117; color: #e6edf3; border: 1px solid #2a2f35;
+}
+:global(html.dark) .btnPrimary { background: #2f8a5a; }
+:global(html.dark) .btnGhost { background: #0f1512; border-color: #244a34; color: #a6e3bf; }
+:global(html.dark) .card { background: #0f1512; border-color: #244a34; }
+:global(html.dark) .banner { background: #0f1512; border-color: #244a34; }
+:global(html.dark) .badge { background: #0f1512; border-color: #244a34; color: #a6e3bf; }
+:global(html.dark) .alertCard { background: #16120f; border-color: #5a4430; }
