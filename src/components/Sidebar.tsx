@@ -18,7 +18,7 @@ import {
   BookOpen,
   BarChart3,
   Database,
-  FileSpreadsheet,
+  UserCircle,
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import styles from "./Sidebar.module.css";
@@ -36,6 +36,16 @@ const Sidebar = ({
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  // ✅ ข้อมูลผู้ใช้
+  const [user, setUser] = useState({
+    firstName: "Atichart",
+    lastName: "Niamkam",
+    role: "Geneticist",
+    hospital: "Srinakharinwirot Hospital",
+    email: "atichart@swu.ac.th",
+  });
+
 
   const handleLogout = () => {
     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
@@ -59,8 +69,8 @@ const Sidebar = ({
       path: "/gene",
       icon: <Dna size={22} />,
     },
-        {
-      name: language === "en" ? "Approve" : "กรอกข้อมูลยีน",
+    {
+      name: language === "en" ? "Approve" : "อนุมัติผล",
       path: "/approve",
       icon: <ClipboardCheck size={22} />,
     },
@@ -94,7 +104,6 @@ const Sidebar = ({
       path: "/settings",
       icon: <Settings size={22} />,
     },
-
   ];
 
   return (
@@ -140,6 +149,28 @@ const Sidebar = ({
           ))}
         </ul>
       </nav>
+
+      {/* My Profile (Show Only, Not Clickable) */}
+      <div className={styles.profileWrapper}>
+        <div className={styles.profileDisplay}>
+          <div
+            className={`${styles.profileInfo} ${
+              !isOpen ? styles.textCollapsed : ""
+            }`}
+          >
+            <p className={styles.profileName}>
+              {user.firstName} {user.lastName}
+            </p>
+            <p className={styles.profileRole}>
+              {user.role}
+            </p>
+            <p className={styles.profileRole}>
+              {user.hospital}
+            </p>
+            <p className={styles.profileEmail}>{user.email}</p>
+          </div>
+        </div>
+      </div>
 
       {/* Logout Button */}
       <div className={styles.logoutWrapper}>

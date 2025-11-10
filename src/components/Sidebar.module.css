@@ -204,3 +204,56 @@
   background: #256349;
   color: #ffffff;
 }
+.profileWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 0; /* ลดลงนิดให้บาลานซ์กับ logout */
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  margin-top: 0.8rem;
+}
+
+.iconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+}
+
+.profileInfo {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+  line-height: 0.7; /* ✅ ปรับ spacing ให้สบายตา */
+  overflow: hidden;
+}
+
+.profileName {
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.profileRole {
+  color: #cdebd5;
+  font-size: 0.85rem;
+  margin-bottom: 0.15rem;
+}
+
+.profileEmail {
+  color: #b5b5b5;
+  font-size: 0.85rem; /* ✅ เล็กกว่าชื่อและ role */
+}
+
+/* collapse state */
+.textCollapsed .profileInfo {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 🌙 dark mode */
+:global(html.dark) .profileDisplay {
+  background: rgba(255, 255, 255, 0.05);
+}
