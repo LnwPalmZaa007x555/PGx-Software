@@ -395,35 +395,6 @@ export default function GenePage() {
                     </div>
                   )
                 )}
-
-              {/* Genotype/Phenotype/Recommendation */}
-              {genotype && (
-                <div className={styles.field}>
-                  <label className={styles.label}>
-                    {language === "en" ? "Genotype" : "จีโนไทป์"}
-                  </label>
-                  <input className={styles.input} value={genotype} disabled />
-                </div>
-              )}
-
-              {phenotype && (
-                <div className={styles.field}>
-                  <label className={styles.label}>
-                    {language === "en" ? "Phenotype" : "ฟีโนไทป์"}
-                  </label>
-                  <input className={styles.input} value={phenotype} disabled />
-                </div>
-              )}
-
-              {recommendation && (
-                <div className={styles.field}>
-                  <label className={styles.label}>
-                    {language === "en" ? "Recommendation" : "คำแนะนำ"}
-                  </label>
-                  <input className={styles.input} value={recommendation} disabled />
-                </div>
-              )}
-
               <div className={styles.actions}>
                 <button type="submit" className={styles.button}>
                   <Save size={18} style={{ marginRight: 6 }} />

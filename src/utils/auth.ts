@@ -33,5 +33,10 @@ export function logout() {
   if (typeof window !== "undefined") {
     localStorage.removeItem("token");
     localStorage.removeItem("refreshToken");
+    // Also proactively clear any lingering Authorization header on this axios instance
+    // (interceptors will re-add if a new login occurs)
+    try {
+      delete (apiClient.defaults.headers as any)?.Authorization;
+    } catch {}
   }
 }
