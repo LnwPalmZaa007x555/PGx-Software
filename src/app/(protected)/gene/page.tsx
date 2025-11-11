@@ -7,7 +7,7 @@ import { Search, Dna, Save } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import styles from "./page.module.css";
 import { fetchPatients, type PatientDto, updatePatientById } from "@/utils/patients";
-import { saveGeneResult } from "@/utils/gene";
+import { saveGeneResult, type GeneKey } from "@/utils/gene";
 
 type MarkerValues = Record<string, string>;
 
@@ -55,7 +55,7 @@ export default function GenePage() {
   const [searchId, setSearchId] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null);
-  const [gene, setGene] = useState("");
+  const [gene, setGene] = useState<GeneKey | "">("");
   const [markerValues, setMarkerValues] = useState<MarkerValues>({});
   const [genotype, setGenotype] = useState("");
   const [phenotype, setPhenotype] = useState("");
@@ -63,15 +63,17 @@ export default function GenePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [patientList, setPatientList] = useState<PatientRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  // load errors surfaced via alert; dedicated state removed
 
   useEffect(() => {
     (async () => {
       try {
         const items = await fetchPatients();
         setPatientList(toRows(items));
-      } catch (e: any) {
-        setLoadError(e?.response?.data?.error || e?.message || "Failed to load patients");
+      } catch (e: unknown) {
+        const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+        const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to load patients";
+        alert(msg);
       } finally {
         setLoading(false);
       }
@@ -181,26 +183,14 @@ export default function GenePage() {
     e.preventDefault();
     if (!validate()) return;
 
-    const gm = genotypeMappings[gene as keyof typeof genotypeMappings];
-    const computedGenotype = gm.mapToGenotype(markerValues) || "";
-    const found = gm.genotypes.find((g) => g.genotype === computedGenotype);
-
-    const computedPhenotype =
-      language === "en"
-        ? found?.phenotype_en || found?.phenotype || ""
-        : found?.phenotype_th || found?.phenotype || "";
-
-    const computedRecommendation =
-      language === "en"
-        ? found?.recommendation_en || found?.recommendation || ""
-        : found?.recommendation_th || found?.recommendation || "";
+  // phenotype & recommendation already derived during marker changes; no extra computation needed here
 
     try {
       // 1) Save to Result via backend gene endpoint
       if (!gene) throw new Error("Gene is required");
       if (selectedRecordId == null) throw new Error("No patient selected");
 
-      await saveGeneResult(gene as any, selectedRecordId, markerValues);
+  await saveGeneResult(gene as GeneKey, selectedRecordId, markerValues);
 
       // 2) Update Patient status to Pending approval
       await updatePatientById(selectedRecordId, { status: "Pending approval" });
@@ -219,8 +209,10 @@ export default function GenePage() {
       setGenotype("");
       setPhenotype("");
       setRecommendation("");
-    } catch (err: any) {
-      alert(err?.response?.data?.error || err?.message || (language === "en" ? "Save failed" : "บันทึกล้มเหลว"));
+    } catch (err: unknown) {
+      const apiErr = (err as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+      const msg = typeof apiErr === "string" ? apiErr : err instanceof Error ? err.message : (language === "en" ? "Save failed" : "บันทึกล้มเหลว");
+      alert(msg);
     }
   };
 
@@ -344,7 +336,7 @@ export default function GenePage() {
                   }`}
                   value={gene}
                   onChange={(e) => {
-                    setGene(e.target.value);
+                    setGene(e.target.value as GeneKey | "");
                     setMarkerValues({});
                     setGenotype("");
                     setPhenotype("");

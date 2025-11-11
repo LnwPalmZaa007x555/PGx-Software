@@ -37,16 +37,15 @@ export async function fetchLatestResultForPatient(patientId: number) {
     );
     if (resp.status === 204) return undefined;
     return resp.data;
-  } catch (e: any) {
-    const status = e?.response?.status;
+  } catch (e: unknown) {
+    const status = (e as { response?: { status?: number } })?.response?.status;
     if (status === 204 || status === 404) return undefined;
     throw e;
   }
 }
 
 export async function updateResultStatus(resultId: number, status: string) {
-  // Basic wrapper to update a Result row's status
-  const payload = { status } as any;
+  const payload: { status: string } = { status };
   const resp = await apiClient.put(`/results/${resultId}`, payload);
   return resp.data;
 }

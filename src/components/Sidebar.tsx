@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Users,
-  FileText,
   ClipboardCheck,
   Settings,
   LogOut,
@@ -18,10 +17,10 @@ import {
   BookOpen,
   BarChart3,
   Database,
-  FileSpreadsheet,
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import styles from "./Sidebar.module.css";
+import { meRequest, logout, type LoginResponse } from "@/utils/auth";
 
 const Sidebar = ({
   isOpen,
@@ -37,7 +36,24 @@ const Sidebar = ({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // check current user's role to show Admin Panel only for admin
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [user, setUser] = useState<LoginResponse["user"] | null>(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        const me = await meRequest();
+        setIsAdmin(String(me.Role || "").toLowerCase() === "admin");
+        setUser(me);
+      } catch {
+        setIsAdmin(false);
+        setUser(null);
+      }
+    })();
+  }, []);
+
   const handleLogout = () => {
+    logout();
     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     router.push("/login");
   };
@@ -59,7 +75,7 @@ const Sidebar = ({
       path: "/gene",
       icon: <Dna size={22} />,
     },
-        {
+    {
       name: language === "en" ? "Approve" : "กรอกข้อมูลยีน",
       path: "/approve",
       icon: <ClipboardCheck size={22} />,
@@ -84,17 +100,23 @@ const Sidebar = ({
       path: "/reports",
       icon: <BarChart3 size={22} />,
     },
-    {
-      name: language === "en" ? "Admin Panel" : "การตั้งค่าระบบ",
-      path: "/admin",
-      icon: <ShieldUser size={22} />,
-    },
+    // Admin Panel (admin only)
+    ...(
+      isAdmin
+        ? [
+            {
+              name: language === "en" ? "Admin Panel" : "การตั้งค่าระบบ",
+              path: "/admin",
+              icon: <ShieldUser size={22} />,
+            },
+          ]
+        : []
+    ),
     {
       name: language === "en" ? "Settings" : "การตั้งค่า",
       path: "/settings",
       icon: <Settings size={22} />,
     },
-
   ];
 
   return (
@@ -140,6 +162,30 @@ const Sidebar = ({
           ))}
         </ul>
       </nav>
+
+      {/* My Profile (Display only) */}
+      <div className={styles.profileWrapper}>
+        <div className={styles.profileDisplay}>
+          <div
+            className={`${styles.profileInfo} ${!isOpen ? styles.textCollapsed : ""}`}
+          >
+            {user ? (
+              <>
+                <p className={styles.profileName}>
+                  {user.Fname} {user.Lname}
+                </p>
+                <p className={styles.profileRole}>{user.Role || ""}</p>
+                <p className={styles.profileRole}>{user.Hospital_Name}</p>
+                <p className={styles.profileEmail}>{user.email}</p>
+              </>
+            ) : (
+              <p className={styles.profileEmail}>
+                {language === "en" ? "Loading user..." : "กำลังโหลดผู้ใช้..."}
+              </p>
+            )}
+          </div>
+        </div>
+    </div>
 
       {/* Logout Button */}
       <div className={styles.logoutWrapper}>

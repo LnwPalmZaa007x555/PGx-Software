@@ -47,8 +47,10 @@ export default function DashboardPage() {
           { label: "Rejection Rate", th: "อัตราการปฏิเสธสิ่งส่งตรวจ", value: `${data.kpiQuality.rejectionRate}%` },
           { label: "Average TAT", th: "TAT เฉลี่ย", value: `${data.kpiQuality.averageTatHours} ชม.` },
         ]);
-      } catch (e: any) {
-        setError(e?.response?.data?.error || e?.message || "Failed to load dashboard");
+      } catch (e: unknown) {
+        const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+        const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to load dashboard";
+        setError(msg);
       } finally {
         setLoading(false);
       }

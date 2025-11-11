@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { supabase } from "../../supabaseClient";
 import { newAdminSchema, updateAdminSchema } from "../../schemas/user/admin.schema";
 import type { Admin, NewAdmin, UpdateAdmin, AdminWithStaff } from "../../types/user/admin";
+import { ZodError } from "zod";
 
 // GET /api/admin
 export async function getAdmins(_req: Request, res: Response) {
@@ -14,8 +15,9 @@ export async function getAdmins(_req: Request, res: Response) {
 
     if (error) return res.status(500).json({ error: error.message });
     return res.json(data);
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -39,8 +41,9 @@ export async function getAdminsWithStaff(_req: Request, res: Response) {
 
     if (error) return res.status(500).json({ error: error.message });
     return res.json(data);
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -72,15 +75,16 @@ export async function getAdminById(req: Request, res: Response) {
     if (!data)  return res.status(404).json({ error: "Admin not found" });
 
     // 🧽 normalize: ถ้าเป็น array ให้หยิบตัวแรก, ถ้าไม่มีให้เป็น null
-    const staff =
-      Array.isArray((data as any).Staff)
-        ? ((data as any).Staff[0] ?? null)
-        : (data as any).Staff ?? null;
+    const d = data as unknown as { Staff?: unknown };
+    const staff = Array.isArray(d.Staff)
+      ? ((d.Staff as unknown[])[0] ?? null)
+      : d.Staff ?? null;
 
     const payload = { ...data, Staff: staff };
     return res.json(payload); // ตอนนี้ shape ตรงกับ AdminWithStaff
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -99,9 +103,10 @@ export async function createAdmin(req: Request, res: Response) {
 
     if (error) return res.status(400).json({ error: error.message });
     return res.status(201).json(data);
-  } catch (e: any) {
-    if (e?.name === "ZodError") return res.status(400).json({ error: e.flatten() });
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    if (e instanceof ZodError) return res.status(400).json({ error: e.flatten() });
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -123,9 +128,10 @@ export async function updateAdminById(req: Request, res: Response) {
 
     if (error) return res.status(400).json({ error: error.message });
     return res.json(data);
-  } catch (e: any) {
-    if (e?.name === "ZodError") return res.status(400).json({ error: e.flatten() });
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    if (e instanceof ZodError) return res.status(400).json({ error: e.flatten() });
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -142,7 +148,8 @@ export async function deleteAdminById(req: Request, res: Response) {
 
     if (error) return res.status(500).json({ error: error.message });
     return res.json({ ok: true, message: `Admin ${id} deleted` });
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }

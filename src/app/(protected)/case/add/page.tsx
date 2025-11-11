@@ -16,14 +16,14 @@ export default function AddCasePage() {
     firstName: "",
     lastName: "",
     sex: "",
-    dob: "",
+    age: "", // keep as string in UI, convert to number on submit
     phone: "",
     ethnicity: "",
     otherEthnicity: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [highlightedFields, setHighlightedFields] = useState<string[]>([]);
+  // removed unused highlightedFields state
 
   // 🔄 Handle input
   const handleChange = (
@@ -76,16 +76,10 @@ export default function AddCasePage() {
       newErrors.sex =
         language === "en" ? "Please select sex" : "กรุณาเลือกเพศ";
 
-    if (!form.dob) {
-      newErrors.dob =
-        language === "en"
-          ? "Please select date of birth"
-          : "กรุณาเลือกวันเดือนปีเกิด";
-    } else if (new Date(form.dob) >= new Date()) {
-      newErrors.dob =
-        language === "en"
-          ? "Date of birth cannot be today or in the future"
-          : "วันเกิดต้องไม่เป็นวันที่ปัจจุบันหรืออนาคต";
+    if (!form.age) {
+      newErrors.age = language === "en" ? "Please enter age" : "กรุณากรอกอายุ";
+    } else if (!/^\d{1,3}$/.test(form.age) || Number(form.age) > 120) {
+      newErrors.age = language === "en" ? "Invalid age" : "อายุไม่ถูกต้อง";
     }
 
     if (!/^\d{10}$/.test(form.phone))
@@ -116,7 +110,10 @@ export default function AddCasePage() {
     if (!validate()) return;
 
     try {
-      await createPatientFromForm(form);
+      await createPatientFromForm({
+        ...form,
+        age: Number(form.age),
+      });
       alert(
         language === "en"
           ? "✅ Patient created successfully!"
@@ -127,14 +124,22 @@ export default function AddCasePage() {
         firstName: "",
         lastName: "",
         sex: "",
-        dob: "",
+        age: "",
         phone: "",
         ethnicity: "",
         otherEthnicity: "",
       });
       router.push("/case");
-    } catch (err: any) {
-      const msg = err?.response?.data?.error || err?.message || (language === "en" ? "Create failed" : "บันทึกล้มเหลว");
+    } catch (err: unknown) {
+      const apiErr = (err as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+      const msg =
+        typeof apiErr === "string"
+          ? apiErr
+          : err instanceof Error
+          ? err.message
+          : language === "en"
+          ? "Create failed"
+          : "บันทึกล้มเหลว";
       alert(msg);
     }
   };
@@ -222,23 +227,23 @@ export default function AddCasePage() {
           </div>
         </div>
 
-        {/* DOB + Sex */}
+        {/* Age + Sex */}
         <div className={styles.row}>
           <div className={styles.field}>
             <label className={styles.label}>
-              {language === "en" ? "Date of Birth" : "วันเดือนปีเกิด"}
+              {language === "en" ? "Age" : "อายุ"}
             </label>
             <input
-              type="date"
-              name="dob"
-              className={`${styles.input} ${styles.dateInput} ${
-                errors.dob ? styles.errorInput : ""
-              }`}
-              value={form.dob}
+              type="number"
+              name="age"
+              className={`${styles.input} ${errors.age ? styles.errorInput : ""}`}
+              value={form.age}
               onChange={handleChange}
-              max={new Date().toISOString().split("T")[0]}
+              min={0}
+              max={120}
+              placeholder={language === "en" ? "Age" : "อายุ"}
             />
-            {errors.dob && <span className={styles.error}>{errors.dob}</span>}
+            {errors.age && <span className={styles.error}>{errors.age}</span>}
           </div>
           <div className={styles.field}>
             <label className={styles.label}>

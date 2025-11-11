@@ -71,8 +71,10 @@ export default function ApprovePage() {
       try {
         const items = await fetchPatients();
         setPatientList(toRows(items));
-      } catch (e: any) {
-        setError(e?.response?.data?.error || e?.message || "Failed to load");
+      } catch (e: unknown) {
+        const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+        const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to load";
+        setError(msg);
       } finally {
         setLoading(false);
       }
@@ -160,7 +162,7 @@ export default function ApprovePage() {
         const gm = genotypeMappings[geneName as keyof typeof genotypeMappings];
         if (gm && typeof gm.mapToGenotype === "function") {
           try {
-            genotype = gm.mapToGenotype(markers as any) || "";
+            genotype = gm.mapToGenotype(markers) || "";
           } catch {
             genotype = "";
           }
@@ -174,8 +176,10 @@ export default function ApprovePage() {
           recommend,
           resultId: data?.result?.Result_Id ?? null,
         });
-      } catch (e: any) {
-        setDetailError(e?.response?.data?.error || e?.message || "Failed to load result");
+      } catch (e: unknown) {
+        const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+        const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to load result";
+        setDetailError(msg);
       } finally {
         setDetailLoading(false);
       }
@@ -191,17 +195,17 @@ export default function ApprovePage() {
       alert(language === "en" ? "✅ Patient approved successfully!" : "✅ อนุมัติผู้ป่วยสำเร็จแล้ว!");
       setSelectedId(null);
       setDetail(null);
-    } catch (e: any) {
-      const err = e?.response?.data?.error;
-      let msg = e?.message || (language === "en" ? "Approve failed" : "อนุมัติไม่สำเร็จ");
-      if (err && typeof err === "object") {
-        // handle zod flatten shape
-        const fields = err.fieldErrors ? Object.values(err.fieldErrors).flat() : [];
-        const forms = err.formErrors || [];
-        const all = [...(forms || []), ...(fields || [])].filter(Boolean) as string[];
+    } catch (e: unknown) {
+      const respErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+      let msg = e instanceof Error ? e.message : (language === "en" ? "Approve failed" : "อนุมัติไม่สำเร็จ");
+      if (respErr && typeof respErr === "object") {
+        const z = respErr as { fieldErrors?: Record<string, unknown[]>; formErrors?: unknown[] };
+        const fields = z.fieldErrors ? Object.values(z.fieldErrors).flat() : [];
+        const forms = z.formErrors || [];
+        const all = [...forms, ...fields].filter((x): x is string => typeof x === "string");
         if (all.length) msg = all.join("\n");
-      } else if (typeof err === "string") {
-        msg = err;
+      } else if (typeof respErr === "string") {
+        msg = respErr;
       }
       alert(msg);
     }
@@ -220,16 +224,17 @@ export default function ApprovePage() {
       alert(language === "en" ? "❌ Sent back for correction." : "❌ ส่งกลับเพื่อแก้ไขข้อมูล.");
       setSelectedId(null);
       setDetail(null);
-    } catch (e: any) {
-      const err = e?.response?.data?.error;
-      let msg = e?.message || (language === "en" ? "Send back failed" : "ส่งกลับไม่สำเร็จ");
-      if (err && typeof err === "object") {
-        const fields = err.fieldErrors ? Object.values(err.fieldErrors).flat() : [];
-        const forms = err.formErrors || [];
-        const all = [...(forms || []), ...(fields || [])].filter(Boolean) as string[];
+    } catch (e: unknown) {
+      const respErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+      let msg = e instanceof Error ? e.message : (language === "en" ? "Send back failed" : "ส่งกลับไม่สำเร็จ");
+      if (respErr && typeof respErr === "object") {
+        const z = respErr as { fieldErrors?: Record<string, unknown[]>; formErrors?: unknown[] };
+        const fields = z.fieldErrors ? Object.values(z.fieldErrors).flat() : [];
+        const forms = z.formErrors || [];
+        const all = [...forms, ...fields].filter((x): x is string => typeof x === "string");
         if (all.length) msg = all.join("\n");
-      } else if (typeof err === "string") {
-        msg = err;
+      } else if (typeof respErr === "string") {
+        msg = respErr;
       }
       alert(msg);
     }

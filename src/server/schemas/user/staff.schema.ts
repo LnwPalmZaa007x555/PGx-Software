@@ -20,3 +20,13 @@ export const updateStaffSchema = z.object({
 
 export type NewStaffInput = z.infer<typeof newStaffSchema>;
 export type UpdateStaffInput = z.infer<typeof updateStaffSchema>;
+
+// Reset password by email
+export const resetPasswordByEmailSchema = z
+  .object({
+    email: z.string().email().toLowerCase().trim(),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+  })
+  .strict();
+
+export type ResetPasswordByEmailInput = z.infer<typeof resetPasswordByEmailSchema>;

@@ -33,8 +33,14 @@ export default function LoginPage() {
       try {
         await loginRequest(email, password);
         router.push("/dashboard");
-      } catch (err: any) {
-        const msg = err?.response?.data?.error || err?.message || "Login failed";
+      } catch (err: unknown) {
+        const apiErr = (err as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+        const msg =
+          typeof apiErr === "string"
+            ? apiErr
+            : err instanceof Error
+            ? err.message
+            : "Login failed";
         setErrors({ password: msg });
         //palm1@example.com
         //secretpass123

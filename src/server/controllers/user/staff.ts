@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { supabase } from "../../supabaseClient";
-import { newStaffSchema, updateStaffSchema } from "../../schemas/user/staff.schema";
+import { newStaffSchema, updateStaffSchema, resetPasswordByEmailSchema } from "../../schemas/user/staff.schema";
 import type { StaffPublic } from "../../types/user/staff";
+import { ZodError } from "zod";
 
 // ไม่คืน password
 const PUBLIC_COLUMNS =
@@ -18,8 +19,9 @@ export async function getStaff(_req: Request, res: Response) {
 
     if (error) return res.status(500).json({ error: error.message });
     return res.json(data as StaffPublic[]);
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -37,8 +39,9 @@ export async function getStaffById(req: Request, res: Response) {
 
     if (error) return res.status(404).json({ error: error.message });
     return res.json(data as StaffPublic);
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -66,9 +69,10 @@ export async function createStaff(req: Request, res: Response) {
 
     if (error) return res.status(400).json({ error: error.message });
     return res.status(201).json(data as StaffPublic);
-  } catch (e: any) {
-    if (e?.name === "ZodError") return res.status(400).json({ error: e.flatten() });
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    if (e instanceof ZodError) return res.status(400).json({ error: e.flatten() });
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -78,8 +82,8 @@ export async function updateStaffById(req: Request, res: Response) {
   if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid Staff_Id" });
 
   try {
-    const patch = updateStaffSchema.parse(req.body);
-    const toUpdate: Record<string, any> = { ...patch };
+  const patch = updateStaffSchema.parse(req.body);
+  const toUpdate: Record<string, unknown> = { ...patch };
 
     if (patch.password) {
       toUpdate.password = await bcrypt.hash(patch.password, 10);
@@ -94,9 +98,10 @@ export async function updateStaffById(req: Request, res: Response) {
 
     if (error) return res.status(400).json({ error: error.message });
     return res.json(data as StaffPublic);
-  } catch (e: any) {
-    if (e?.name === "ZodError") return res.status(400).json({ error: e.flatten() });
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    if (e instanceof ZodError) return res.status(400).json({ error: e.flatten() });
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -109,7 +114,55 @@ export async function deleteStaffById(req: Request, res: Response) {
     const { error } = await supabase.from("Staff").delete().eq("Staff_Id", id);
     if (error) return res.status(500).json({ error: error.message });
     return res.json({ ok: true, message: `Staff ${id} deleted` });
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
+  }
+}
+
+// GET /api/staff/exists?email=...
+export async function getStaffExists(req: Request, res: Response) {
+  const email = String(req.query.email ?? "").toLowerCase().trim();
+  if (!email) return res.status(400).json({ error: "email is required" });
+  try {
+    const { data, error } = await supabase
+      .from("Staff")
+      .select("Staff_Id")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ exists: !!data, staffId: data?.Staff_Id ?? null });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
+  }
+}
+
+// POST /api/staff/reset-password
+export async function resetStaffPasswordByEmail(req: Request, res: Response) {
+  try {
+    const { email, password } = resetPasswordByEmailSchema.parse(req.body);
+    // find staff by email
+    const { data: staff, error: qErr } = await supabase
+      .from("Staff")
+      .select("Staff_Id")
+      .eq("email", email)
+      .maybeSingle();
+    if (qErr) return res.status(500).json({ error: qErr.message });
+    if (!staff) return res.status(404).json({ error: "Email not found" });
+
+    const hashed = await bcrypt.hash(password, 10);
+    const { error: uErr } = await supabase
+      .from("Staff")
+      .update({ password: hashed })
+      .eq("Staff_Id", staff.Staff_Id);
+    if (uErr) return res.status(400).json({ error: uErr.message });
+
+    return res.json({ ok: true, message: `Password reset for ${email}` });
+  } catch (e: unknown) {
+    if (e instanceof ZodError) return res.status(400).json({ error: e.flatten() });
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }

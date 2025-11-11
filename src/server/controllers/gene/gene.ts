@@ -12,7 +12,8 @@ export async function listGenes(_req: Request, res: Response) {
 
     if (error) return res.status(500).json({ error: error.message });
     return res.json(data || []);
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }

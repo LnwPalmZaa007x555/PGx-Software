@@ -6,7 +6,7 @@ export type AddCaseForm = {
   firstName: string;
   lastName: string;
   sex: string; // "male" | "female"
-  dob: string; // yyyy-mm-dd
+  age: number; // numeric age provided directly
   phone: string; // 10 digits
   ethnicity: string; // "thai" | "other"
   otherEthnicity?: string;
@@ -27,20 +27,11 @@ export type PatientDto = {
   approve_at: string | null;
 };
 
-function yearsBetween(dob: string): number {
-  const birth = new Date(dob);
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  return Math.max(0, age);
-}
-
 export async function createPatientFromForm(form: AddCaseForm): Promise<PatientDto> {
   const payload = {
     Fname: form.firstName.trim(),
     Lname: form.lastName.trim(),
-    Age: yearsBetween(form.dob),
+    Age: Number(form.age),
     Gender: form.sex,
     Phone: form.phone,
     Id_Card: form.idCard,
@@ -63,6 +54,6 @@ export async function deletePatientById(patientId: number): Promise<void> {
   await apiClient.delete(`/patients/${patientId}`);
 }
 
-export async function updatePatientById<T extends Record<string, any>>(patientId: number, patch: T): Promise<void> {
+export async function updatePatientById<T extends Record<string, unknown>>(patientId: number, patch: T): Promise<void> {
   await apiClient.put(`/patients/${patientId}`, patch);
 }

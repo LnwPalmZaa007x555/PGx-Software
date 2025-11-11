@@ -5,6 +5,7 @@ import { newCYP3A5Schema, updateCYP3A5Schema } from "../../schemas/gene/cyp3a5.s
 import { newResultSchema } from "../../schemas/result.schema";
 import { NewResult } from "../../types/result";
 import { PK_FIELD_BY_TABLE } from "../../util/constant";
+import { ZodError } from "zod";
 
 // GET /api/cyp3a5
 export async function getCYP3A5(_req: Request, res: Response) {
@@ -17,8 +18,9 @@ export async function getCYP3A5(_req: Request, res: Response) {
 
     if (error) return res.status(500).json({ error: error.message });
     return res.json(data);
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -38,8 +40,9 @@ export async function getCYP3A5ById(req: Request, res: Response) {
 
     if (error) return res.status(404).json({ error: error.message });
     return res.json(data);
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -57,11 +60,12 @@ export async function createCYP3A5(req: Request, res: Response) {
 
     if (error) return res.status(400).json({ error: error.message });
     return res.status(201).json(data);
-  } catch (e: any) {
-    if (e?.name === "ZodError") {
+  } catch (e: unknown) {
+    if (e instanceof ZodError) {
       return res.status(400).json({ error: e.flatten() });
     }
-    return res.status(500).json({ error: String(e?.message || e) });
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -84,11 +88,12 @@ export async function updateCYP3A5ById(req: Request, res: Response) {
 
     if (error) return res.status(400).json({ error: error.message });
     return res.status(200).json(data);
-  } catch (e: any) {
-    if (e?.name === "ZodError") {
+  } catch (e: unknown) {
+    if (e instanceof ZodError) {
       return res.status(400).json({ error: e.flatten() });
     }
-    return res.status(500).json({ error: String(e?.message || e) });
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -106,8 +111,9 @@ export async function deleteCYP3A5ById(req: Request, res: Response) {
 
     if (error) return res.status(500).json({ error: error.message });
     return res.json({ ok: true, message: `CYP3A5 ${idNum} deleted` });
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -131,7 +137,7 @@ export async function saveToResult(req: Request, res: Response) {
           if (geneError) return res.status(500).json({ error: geneError.message });
           if (!geneRows?.length) return res.status(400).json({ error: "Gene not found" });
 
-          const geneName = geneRows[0].gene_name as string;
+       const geneName = String(geneRows[0].gene_name);
              const pkField = PK_FIELD_BY_TABLE[geneName];
         if (!pkField) return res.status(400).json({ error: `Unsupported gene table: ${geneName}` });
 
@@ -142,9 +148,10 @@ export async function saveToResult(req: Request, res: Response) {
             .single();
           
         if (tableErr) return res.status(500).json({ error: tableErr.message });
-        if (!geneRow) return res.status(404).json({ error: "No matching gene record found" });
+    if (!geneRow) return res.status(404).json({ error: "No matching gene record found" });
 
-        const gene_information = Number((geneRow as any)[pkField]);
+    const giRaw = (geneRow as Record<string, unknown>)[pkField];
+    const gene_information = typeof giRaw === "number" ? giRaw : Number(giRaw);
         
         if (!Number.isFinite(gene_information)) {
             return res.status(500).json({error: `Primary  key field "${pkField}" not found in ${geneName} row` });
@@ -185,17 +192,22 @@ export async function saveToResult(req: Request, res: Response) {
 
             if (enrichErr) return res.status(500).json({ error: enrichErr.message });
 
-            const response = { 
+      const gr = geneRow as Record<string, unknown>;
+      const predict_pheno = typeof gr["Predict_Pheno"] === "string" ? (gr["Predict_Pheno"] as string) : null;
+      const recommend = typeof gr["Recommend"] === "string" ? (gr["Recommend"] as string) : null;
+
+      const response = { 
                 ...enriched,
                 gene_meta:{
                     gene_name: geneName,
-                    predict_pheno: (geneRow as any).Predict_Pheno ?? null,
-                    recommend: (geneRow as any).Recommend ?? null,
+          predict_pheno,
+          recommend,
                 },
             }
             return res.status(201).json(response);
-    } catch (e : any) {
-        console.error("[saveToResult ERROR]", e);
-        return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e : unknown) {
+    console.error("[saveToResult ERROR]", e);
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
     }
 }

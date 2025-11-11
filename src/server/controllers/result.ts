@@ -111,7 +111,7 @@ export async function getLatestByPatientWithGene(req: Request, res: Response, ne
       .single();
     if (gErr || !geneRow) return res.status(404).json({ error: gErr?.message || "Gene not found" });
 
-    const dbGeneName = geneRow.gene_name as string; // e.g., CYP2C19 or HLA_B
+  const dbGeneName = String(geneRow.gene_name); // e.g., CYP2C19 or HLA_B
     // Map to UI-friendly gene name (HLA_B -> HLA-B*15:02)
     const uiGeneName = dbGeneName === "HLA_B" ? "HLA-B*15:02" : dbGeneName;
 
@@ -128,43 +128,56 @@ export async function getLatestByPatientWithGene(req: Request, res: Response, ne
 
     // 4) Map backend columns -> UI marker names
     const markers: Record<string, string> = {};
+    const row = geneInfoRow as Record<string, unknown>;
+    const getStr = (k: string, fallback = "") => {
+      const v = row[k];
+      return typeof v === "string" ? v : fallback;
+    };
+
     switch (dbGeneName) {
       case "CYP2C19":
-        markers["CYP2C19*2 (681G>A)"] = (geneInfoRow as any)["CYPx2_681G"] ?? "";
-        markers["CYP2C19*3 (636G>A)"] = (geneInfoRow as any)["CYPx3_636G"] ?? "";
-        markers["CYP2C19*17 (-806C>T)"] = (geneInfoRow as any)["CYPx17_806C"] ?? "";
+        markers["CYP2C19*2 (681G>A)"] = getStr("CYPx2_681G");
+        markers["CYP2C19*3 (636G>A)"] = getStr("CYPx3_636G");
+        markers["CYP2C19*17 (-806C>T)"] = getStr("CYPx17_806C");
         break;
       case "CYP2C9":
-        markers["CYP2C9*2 (430C>T)"] = (geneInfoRow as any)["CYP2C9x2_430C"] ?? "";
-        markers["CYP2C9*3 (1075A>C)"] = (geneInfoRow as any)["CYP2C9x3_1075A"] ?? "";
+        markers["CYP2C9*2 (430C>T)"] = getStr("CYP2C9x2_430C");
+        markers["CYP2C9*3 (1075A>C)"] = getStr("CYP2C9x3_1075A");
         break;
       case "CYP2D6":
-        markers["CYP2D6*4 (1847G>A)"] = (geneInfoRow as any)["CYP2D6x4_1847G"] ?? "-";
-        markers["CYP2D6*10 (100C>T)"] = (geneInfoRow as any)["CYP2D6x10_100C"] ?? "-";
-        markers["CYP2D6*41 (2989G>A)"] = (geneInfoRow as any)["CYP2D6x41_2989G"] ?? "-";
-        markers["CNV intron 2"] = (geneInfoRow as any)["CNV_Intron"] ?? "";
-        markers["CNV exon 9"] = (geneInfoRow as any)["CNV_Exon"] ?? "";
+        markers["CYP2D6*4 (1847G>A)"] = getStr("CYP2D6x4_1847G", "-");
+        markers["CYP2D6*10 (100C>T)"] = getStr("CYP2D6x10_100C", "-");
+        markers["CYP2D6*41 (2989G>A)"] = getStr("CYP2D6x41_2989G", "-");
+        markers["CNV intron 2"] = getStr("CNV_Intron");
+        markers["CNV exon 9"] = getStr("CNV_Exon");
         break;
       case "CYP3A5":
-        markers["CYP3A5*3 (6986A>G)"] = (geneInfoRow as any)["CYP3A5x3_6986A"] ?? "";
+        markers["CYP3A5*3 (6986A>G)"] = getStr("CYP3A5x3_6986A");
         break;
       case "VKORC1":
-        markers["VKORC1 (1173C>T)"] = (geneInfoRow as any)["VKORC1_1173C"] ?? "";
-        markers["VKORC1 (-1639G>A)"] = (geneInfoRow as any)["VKORC1_1639G"] ?? "";
+        markers["VKORC1 (1173C>T)"] = getStr("VKORC1_1173C");
+        markers["VKORC1 (-1639G>A)"] = getStr("VKORC1_1639G");
         break;
       case "TPMT":
-        markers["TPMT*3C (719A>G)"] = (geneInfoRow as any)["TPMTx3C_719A"] ?? "";
+        markers["TPMT*3C (719A>G)"] = getStr("TPMTx3C_719A");
         break;
       case "HLA_B":
-        markers["HLA-B*15:02 status"] = (geneInfoRow as any)["status"] ?? "";
+        markers["HLA-B*15:02 status"] = getStr("status");
         break;
       default:
         // fallback: no markers
         break;
     }
-
-  const predict_pheno = (geneInfoRow as any).Predict_Pheno ?? (geneInfoRow as any).phenotype ?? null;
-  const recommend = (geneInfoRow as any).Recommend ?? (geneInfoRow as any).recommend ?? null;
+  const predict_pheno = ((): string | null => {
+    const p1 = row["Predict_Pheno"]; if (typeof p1 === "string") return p1;
+    const p2 = row["phenotype"]; if (typeof p2 === "string") return p2;
+    return null;
+  })();
+  const recommend = ((): string | null => {
+    const r1 = row["Recommend"]; if (typeof r1 === "string") return r1;
+    const r2 = row["recommend"]; if (typeof r2 === "string") return r2;
+    return null;
+  })();
 
     return res.json({
       result,

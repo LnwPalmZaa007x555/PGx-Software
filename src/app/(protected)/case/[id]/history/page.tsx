@@ -16,7 +16,7 @@ export default function PatientHistoryPage() {
 
   const [patient, setPatient] = useState<PatientDto | null>(null);
   const [results, setResults] = useState<ResultRow[]>([]);
-  const [count, setCount] = useState(0);
+  // removed unused count state (not displayed)
   const [geneMap, setGeneMap] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,11 +39,12 @@ export default function PatientHistoryPage() {
           fetchGeneNameByIdMap(),
           listResultsForPatient(p.Patient_Id, 100, 0),
         ]);
-        setGeneMap(gmap);
-        setResults(res.items || []);
-        setCount(res.count || 0);
-      } catch (e: any) {
-        setError(e?.response?.data?.error || e?.message || "Failed to load");
+  setGeneMap(gmap);
+  setResults(res.items || []);
+      } catch (e: unknown) {
+        const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+        const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to load";
+        setError(msg);
       } finally {
         setLoading(false);
       }

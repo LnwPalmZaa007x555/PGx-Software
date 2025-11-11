@@ -36,8 +36,10 @@ export default function ReportsPage() {
         setLoading(true);
         const d = await fetchDashboard();
         setData(d);
-      } catch (e: any) {
-        setError(e?.response?.data?.error || e?.message || "Failed to load");
+      } catch (e: unknown) {
+        const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+        const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to load";
+        setError(msg);
       } finally {
         setLoading(false);
       }
@@ -73,10 +75,7 @@ export default function ReportsPage() {
     ];
   }, [data]);
 
-  const kpi = [
-    { name: lang === "en" ? "Rejection Rate" : "อัตราการปฏิเสธสิ่งส่งตรวจ", value: `${data?.kpiQuality.rejectionRate ?? 0}%` },
-    { name: lang === "en" ? "Average TAT (hrs)" : "TAT เฉลี่ย (ชม.)", value: String(data?.kpiQuality.averageTatHours ?? 0) },
-  ];
+  // Removed unused local kpi array (use data directly in render)
 
   const COLORS = ["#4ca771", "#81c784", "#c8e6c9"];
 

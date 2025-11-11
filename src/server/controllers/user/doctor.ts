@@ -2,15 +2,17 @@ import { Request, Response } from "express";
 import { supabase } from "../../supabaseClient";
 import { newDoctorSchema, updateDoctorSchema } from "../../schemas/user/doctor.schema";
 import type { Doctor, NewDoctor, UpdateDoctor, DoctorWithStaff } from "../../types/user/doctor";
+import { ZodError } from "zod";
 
 // 👇 แก้ให้ตรงชื่อ FK จริง ถ้าไม่ใช่ชื่อนี้
 const FK_NAME = "doctor_staff_fk";
 
 // util: normalize กรณี PostgREST ส่ง Staff เป็น array
-function pickSingleStaff(row: any) {
-  if (!row) return row;
-  const staff = Array.isArray(row.Staff) ? (row.Staff[0] ?? null) : (row.Staff ?? null);
-  return { ...row, Staff: staff };
+function pickSingleStaff(row: unknown) {
+  if (!row || typeof row !== "object") return row;
+  const r = row as { Staff?: unknown } & Record<string, unknown>;
+  const staff = Array.isArray(r.Staff) ? ((r.Staff as unknown[])[0] ?? null) : (r.Staff ?? null);
+  return { ...r, Staff: staff };
 }
 
 /**
@@ -27,8 +29,9 @@ export async function getDoctors(_req: Request, res: Response) {
 
     if (error) return res.status(500).json({ error: error.message });
     return res.json(data);
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -56,8 +59,9 @@ export async function getDoctorsWithStaff(_req: Request, res: Response) {
 
     const normalized = (data ?? []).map(pickSingleStaff);
     return res.json(normalized as DoctorWithStaff[]);
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -92,8 +96,9 @@ export async function getDoctorById(req: Request, res: Response) {
     if (!data)  return res.status(404).json({ error: "Doctor not found" });
 
     return res.json(pickSingleStaff(data) as DoctorWithStaff);
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -114,9 +119,10 @@ export async function createDoctor(req: Request, res: Response) {
 
     if (error) return res.status(400).json({ error: error.message });
     return res.status(201).json(data);
-  } catch (e: any) {
-    if (e?.name === "ZodError") return res.status(400).json({ error: e.flatten() });
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    if (e instanceof ZodError) return res.status(400).json({ error: e.flatten() });
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -143,9 +149,10 @@ export async function updateDoctorById(req: Request, res: Response) {
 
     if (error) return res.status(400).json({ error: error.message });
     return res.json(data);
-  } catch (e: any) {
-    if (e?.name === "ZodError") return res.status(400).json({ error: e.flatten() });
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    if (e instanceof ZodError) return res.status(400).json({ error: e.flatten() });
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -167,7 +174,8 @@ export async function deleteDoctorById(req: Request, res: Response) {
 
     if (error) return res.status(500).json({ error: error.message });
     return res.json({ ok: true, message: `Doctor ${id} deleted` });
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }

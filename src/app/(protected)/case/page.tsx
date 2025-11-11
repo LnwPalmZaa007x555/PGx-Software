@@ -13,7 +13,7 @@ type PatientRow = {
   firstName: string;
   lastName: string;
   sex: string;
-  dob: string; // not available from backend; display "-" for now
+  age: number; // not available from backend; display "-" for now
   phone: string;
   ethnicity: "thai" | "other";
   otherEthnicity?: string;
@@ -37,7 +37,7 @@ function toRows(items: PatientDto[]): PatientRow[] {
       firstName: p.Fname,
       lastName: p.Lname,
       sex: (p.Gender || "").toLowerCase() as "male" | "female",
-      dob: "-",
+      age: p.Age,
       phone: p.Phone,
       ethnicity: isThai ? "thai" : "other",
       otherEthnicity: isThai ? undefined : p.Ethnicity,
@@ -58,8 +58,10 @@ export default function CaseListPage() {
       try {
         const data = await fetchPatients();
         setPatients(toRows(data));
-      } catch (e: any) {
-        setError(e?.response?.data?.error || e?.message || "Failed to load");
+      } catch (e: unknown) {
+        const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+        const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to load";
+        setError(msg);
       } finally {
         setLoading(false);
       }
@@ -83,8 +85,10 @@ export default function CaseListPage() {
     try {
       await deletePatientById(recordId);
       setPatients((prev) => prev.filter((p) => p.idCard !== idCard));
-    } catch (e: any) {
-      alert(e?.response?.data?.error || e?.message || "Delete failed");
+    } catch (e: unknown) {
+      const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+      const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Delete failed";
+      alert(msg);
     }
   };
 
@@ -141,7 +145,7 @@ export default function CaseListPage() {
               <th>{language === "en" ? "Name" : "ชื่อ-นามสกุล"}</th>
               <th>{language === "en" ? "Phone" : "เบอร์โทร"}</th>
               <th>{language === "en" ? "Sex" : "เพศ"}</th>
-              <th>{language === "en" ? "DOB" : "วันเกิด"}</th>
+              <th>{language === "en" ? "Age" : "อายุ"}</th>
               <th>{language === "en" ? "Ethnicity" : "สัญชาติ"}</th>
               <th>{language === "en" ? "Status" : "สถานะ"}</th>
               <th>{language === "en" ? "Actions" : "จัดการ"}</th>
@@ -177,7 +181,7 @@ export default function CaseListPage() {
                       ? "Female"
                       : "หญิง"}
                   </td>
-                  <td>{p.dob || "-"}</td>
+                  <td>{p.age}</td>
                   <td>
                     {p.ethnicity === "thai"
                       ? language === "en"

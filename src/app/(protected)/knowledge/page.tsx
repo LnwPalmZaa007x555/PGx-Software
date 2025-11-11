@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import {
   BookOpen,
   Download,
-  Shield,
   ShieldAlert,
   FlaskConical,
   Search,
@@ -413,7 +412,7 @@ export default function KnowledgePage() {
             <select
               className={styles.select}
               value={kind}
-              onChange={(e) => setKind(e.target.value as any)}
+              onChange={(e) => setKind(e.target.value as ("All" | Article["kind"]))}
             >
               <option value="All">{L.filterAll}</option>
               <option value="Clinical">Clinical</option>

@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Shield,
   Users,
   FileLock,
   Link,
@@ -20,7 +19,7 @@ import {
 import styles from "./page.module.css";
 import { useLanguage } from "@/context/LanguageContext";
 import { meRequest } from "@/utils/auth";
-import { fetchStaff, updateStaffById, type StaffDto } from "@/utils/staff";
+import { fetchStaff, updateStaffById, createStaff, fetchStaffByEmail, resetStaffPasswordById, type StaffDto } from "@/utils/staff";
 
 /* Types */
 type RoleOption = "Admin" | "Doctor" | "MedTech" | "Pharmacist";
@@ -31,6 +30,7 @@ interface User {
   lname: string;
   role: RoleOption;
   email: string;
+  hospital?: string;
 }
 
 interface Audit {
@@ -51,7 +51,6 @@ type PDPAItemKey =
 type IntegrationKey = "his" | "analyzer" | "external";
 
 /* Helpers */
-const uid = () => Math.random().toString(36).slice(2, 9);
 
 export default function AdminPanel() {
   const { language } = useLanguage();
@@ -82,8 +81,10 @@ export default function AdminPanel() {
           role: (s.Role as RoleOption) || "Doctor",
         }));
         setUsers(mapped);
-      } catch (e: any) {
-        setError(e?.response?.data?.error || e?.message || "Failed to load staff");
+      } catch (e: unknown) {
+        const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+        const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to load staff";
+        setError(msg);
       } finally {
         setLoading(false);
       }
@@ -92,17 +93,51 @@ export default function AdminPanel() {
 
   // Add/Edit User Modals
   const [showAddUser, setShowAddUser] = useState(false);
-  const [newUser, setNewUser] = useState<User>({ id: 0, fname: "", lname: "", email: "", role: "Doctor" });
+  const [newUser, setNewUser] = useState<User>({ id: 0, fname: "", lname: "", email: "", role: "Doctor", hospital: "" });
   const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
 
   const openAddUser = () => {
-    setNewUser({ id: 0, fname: "", lname: "", email: "", role: "Doctor" });
+    setNewUser({ id: 0, fname: "", lname: "", email: "", role: "Doctor", hospital: "" });
     setShowAddUser(true);
   };
-  const saveNewUser = () => {
-    // Optional: implement createStaff API when needed
-    alert(lang === "en" ? "Creating staff via API not implemented yet" : "ยังไม่ได้ทำ API เพิ่มผู้ใช้");
+  const [addError, setAddError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const saveNewUser = async () => {
+    setAddError(null);
+    if (!newUser.fname || !newUser.lname || !newUser.email || !newUser.hospital) {
+      setAddError(lang === "en" ? "Please fill all fields" : "กรุณากรอกข้อมูลให้ครบ");
+      return;
+    }
+    try {
+      setAdding(true);
+      const created = await createStaff({
+        Fname: newUser.fname,
+        Lname: newUser.lname,
+        Role: newUser.role,
+        email: newUser.email,
+        Hospital_Name: newUser.hospital || "",
+      });
+      // append to UI list
+      setUsers((prev) => [
+        ...prev,
+        {
+          id: created.Staff_Id,
+          fname: created.Fname,
+          lname: created.Lname,
+          email: created.email,
+          role: created.Role as RoleOption,
+          hospital: created.Hospital_Name,
+        },
+      ]);
+      setShowAddUser(false);
+    } catch (e: unknown) {
+      const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+      const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to create staff";
+      setAddError(typeof msg === "string" ? msg : (lang === "en" ? "Validation error" : "ข้อมูลไม่ถูกต้อง"));
+    } finally {
+      setAdding(false);
+    }
   };
   const saveEditUser = async () => {
     if (!editUser) return;
@@ -116,6 +151,68 @@ export default function AdminPanel() {
     if (deleteUserId == null) return;
     setUsers((prev) => prev.filter((u) => u.id !== deleteUserId));
     setDeleteUserId(null);
+  };
+
+  /* ---------------- Reset Password (Admin Only) ---------------- */
+  const [showResetPwd, setShowResetPwd] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetStep, setResetStep] = useState<"verify" | "set">("verify");
+  const [resetTarget, setResetTarget] = useState<StaffDto | null>(null);
+  const [resetPwd, setResetPwd] = useState("");
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetBusy, setResetBusy] = useState(false);
+
+  const openResetModal = () => {
+    setShowResetPwd(true);
+    setResetEmail("");
+    setResetPwd("");
+    setResetError(null);
+    setResetTarget(null);
+    setResetStep("verify");
+  };
+
+  const verifyResetEmail = async () => {
+    setResetError(null);
+    if (!resetEmail) {
+      setResetError(lang === "en" ? "Please enter email" : "กรุณากรอกอีเมล");
+      return;
+    }
+    try {
+      setResetBusy(true);
+      const staff = await fetchStaffByEmail(resetEmail);
+      if (!staff) {
+        setResetError(lang === "en" ? "Email not found" : "ไม่พบอีเมลนี้ในระบบ");
+        return;
+      }
+      setResetTarget(staff);
+      setResetStep("set");
+    } catch (e: unknown) {
+      const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+      const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to verify email";
+      setResetError(msg);
+    } finally {
+      setResetBusy(false);
+    }
+  };
+
+  const submitResetPassword = async () => {
+    setResetError(null);
+    if (!resetTarget) return;
+    if (!resetPwd || resetPwd.length < 8) {
+      setResetError(lang === "en" ? "Password must be at least 8 characters" : "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร");
+      return;
+    }
+    try {
+      setResetBusy(true);
+      await resetStaffPasswordById(resetTarget.Staff_Id, resetPwd);
+      setShowResetPwd(false);
+    } catch (e: unknown) {
+      const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+      const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to reset password";
+      setResetError(msg);
+    } finally {
+      setResetBusy(false);
+    }
   };
 
   /* ---------------- PDPA ---------------- */
@@ -170,7 +267,7 @@ export default function AdminPanel() {
   const [licenseModal, setLicenseModal] = useState(false);
 
   /* ---------------- Audit ---------------- */
-  const [logs, setLogs] = useState<Audit[]>([
+  const [logs] = useState<Audit[]>([
     { id: "1", user: "Admin", action: "Login", timestamp: "2025-11-01 09:20" },
     { id: "2", user: "Somchai", action: "Viewed Patient #102", timestamp: "2025-11-01 10:05" },
     { id: "3", user: "Anan", action: "Edited SOP#2", timestamp: "2025-11-01 13:12" },
@@ -184,18 +281,14 @@ export default function AdminPanel() {
       lang === "en"
         ? "Manage users, privacy (PDPA), integrations, and audit logs."
         : "จัดการผู้ใช้ ความเป็นส่วนตัว (PDPA) การเชื่อมต่อ และบันทึกการใช้งาน",
-    mock: lang === "en" ? "Mock only (no API)" : "จำลองเท่านั้น (ไม่เชื่อม API)",
-
-  users: lang === "en" ? "User Management" : "การจัดการผู้ใช้งาน",
+    users: lang === "en" ? "User Management" : "การจัดการผู้ใช้งาน",
     add: lang === "en" ? "Add" : "เพิ่ม",
     edit: lang === "en" ? "Edit" : "แก้ไข",
     delete: lang === "en" ? "Delete" : "ลบ",
     save: lang === "en" ? "Save" : "บันทึก",
     cancel: lang === "en" ? "Cancel" : "ยกเลิก",
-
     pdpa: "PDPA Management",
     cfg: lang === "en" ? "Configure" : "ตั้งค่า",
-
     integ: "Integration Settings",
     sys: lang === "en" ? "System Settings" : "การตั้งค่าทั่วไป",
     license: lang === "en" ? "License & Technology Transfer" : "สิทธิ์การใช้งาน & ถ่ายทอดเทคโนโลยี",
@@ -216,6 +309,13 @@ export default function AdminPanel() {
         <div className={styles.row} style={{ marginBottom: ".8rem" }}>
           <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={openAddUser}>
             <Plus size={16} /> {txt.add} User
+          </button>
+          <button
+            className={`${styles.btn} ${styles.btnPrimary}`}
+            style={{ marginLeft: ".5rem" }}
+            onClick={openResetModal}
+          >
+            <Key size={16} /> {lang === "en" ? "Reset Password" : "รีเซ็ตรหัสผ่าน"}
           </button>
         </div>
 
@@ -438,6 +538,13 @@ export default function AdminPanel() {
                 value={newUser.email}
                 onChange={(e) => setNewUser((u) => ({ ...u, email: e.target.value }))}
               />
+              <input
+                className={styles.input}
+                placeholder={lang === "en" ? "Hospital" : "โรงพยาบาล"}
+                value={newUser.hospital ?? ""}
+                onChange={(e) => setNewUser((u) => ({ ...u, hospital: e.target.value }))}
+              />
+              {addError && <div className={styles.error}>{addError}</div>}
               <select
                 className={styles.select}
                 value={newUser.role}
@@ -454,9 +561,76 @@ export default function AdminPanel() {
               <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setShowAddUser(false)}>
                 {txt.cancel}
               </button>
-              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={saveNewUser}>
-                <Save size={16} /> {txt.save}
+              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={saveNewUser} disabled={adding}>
+                <Save size={16} /> {adding ? (lang === "en" ? "Saving..." : "กำลังบันทึก...") : txt.save}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {showResetPwd && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBox}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalTitle}>{lang === "en" ? "Reset Password" : "รีเซ็ตรหัสผ่าน"}</div>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setShowResetPwd(false)}>
+                <X size={16} />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              {resetStep === "verify" && (
+                <>
+                  <input
+                    className={styles.input}
+                    placeholder={lang === "en" ? "Staff Email" : "อีเมลผู้ใช้"}
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                  />
+                  <button
+                    className={`${styles.btn} ${styles.btnPrimary}`}
+                    disabled={resetBusy}
+                    onClick={verifyResetEmail}
+                    style={{ marginTop: ".5rem" }}
+                  >
+                    {resetBusy ? (lang === "en" ? "Checking..." : "กำลังตรวจสอบ...") : (lang === "en" ? "Verify" : "ตรวจสอบ")}
+                  </button>
+                </>
+              )}
+              {resetStep === "set" && resetTarget && (
+                <>
+                  <div className={styles.badge}>
+                    {resetTarget.Fname} {resetTarget.Lname} ({resetTarget.email})
+                  </div>
+                  <input
+                    className={styles.input}
+                    type="password"
+                    placeholder={lang === "en" ? "New Password" : "รหัสผ่านใหม่"}
+                    value={resetPwd}
+                    onChange={(e) => setResetPwd(e.target.value)}
+                  />
+                  <button
+                    className={`${styles.btn} ${styles.btnPrimary}`}
+                    disabled={resetBusy}
+                    onClick={submitResetPassword}
+                    style={{ marginTop: ".5rem" }}
+                  >
+                    {resetBusy ? (lang === "en" ? "Saving..." : "กำลังบันทึก...") : (lang === "en" ? "Save Password" : "บันทึกรหัสผ่าน")}
+                  </button>
+                </>
+              )}
+              {resetError && <div className={styles.error} style={{ marginTop: ".5rem" }}>{resetError}</div>}
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setShowResetPwd(false)}>
+                {txt.cancel}
+              </button>
+              {resetStep === "set" && (
+                <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={submitResetPassword} disabled={resetBusy}>
+                  <Save size={16} /> {resetBusy ? (lang === "en" ? "Saving..." : "กำลังบันทึก...") : txt.save}
+                </button>
+              )}
             </div>
           </div>
         </div>

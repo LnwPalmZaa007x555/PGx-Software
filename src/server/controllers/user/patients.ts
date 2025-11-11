@@ -2,7 +2,8 @@ import { Request, Response } from "express";
 import { supabase } from "../../supabaseClient";
 import { Patient, NewPatient, UpdatePatient } from "../../types/user/patients";
 import { newPatientSchema, updatePatientSchema } from "../../schemas/user/patients.schema";
-import { toBangkokString, nowBangkokISO } from "../../util/constant";
+import { nowBangkokISO } from "../../util/constant";
+import { ZodError } from "zod";
 
 
 // GET /api/patients
@@ -12,45 +13,29 @@ export async function getPatients(_req: Request, res: Response) {
       .from("Patients")
       .select("*")
       .limit(50)
-      .returns<Patient[]>(); // 👈 type-safe
-
+      .returns<Patient[]>();
     if (error) return res.status(500).json({ error: error.message });
     return res.json(data);
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
 // POST /api/patients
 export async function createPatient(req: Request, res: Response) {
   try {
-    // ✅ ตรวจสอบข้อมูลก่อน insert
     const payload = newPatientSchema.parse(req.body) as NewPatient;
-
-    // ✅ เพิ่มเวลาไทยลงในฟิลด์ create_at (เก็บเป็น timestamptz)
-    const toInsert: NewPatient = {
-      ...payload,
-      create_at: nowBangkokISO(),
-    };
-
-    // ✅ insert เข้า Supabase
-    const { data, error } = await supabase
-      .from("Patients")
-      .insert(toInsert)
-      .select("*")
-      .single();
-
+    const toInsert: NewPatient = { ...payload, create_at: nowBangkokISO() };
+    const { data, error } = await supabase.from("Patients").insert(toInsert).select("*").single();
     if (error || !data) {
       return res.status(400).json({ error: error?.message || "Insert failed" });
     }
-
-    // ✅ ส่งข้อมูลกลับตรง ๆ โดยไม่แปลงเวลา
     return res.status(201).json(data);
-  } catch (e: any) {
-    if (e?.name === "ZodError") {
-      return res.status(400).json({ error: e.flatten() });
-    }
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    if (e instanceof ZodError) return res.status(400).json({ error: e.flatten() });
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -71,8 +56,9 @@ export async function getPatientById(req: Request, res: Response) {
 
     if (error) return res.status(404).json({ error: error.message });
     return res.json(data);
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -94,8 +80,9 @@ export async function deletePatientById(req: Request, res: Response) {
       return res.status(500).json({ error: error.message });
     }
     return res.status(200).json({ ok: true, message: `Patient ${idNum} deleted` });
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -123,11 +110,10 @@ export async function updatePatientById(req: Request, res: Response) {
       return res.status(400).json({ error: error.message });
     }
     return res.status(200).json(data);
-  } catch (e: any) {
-    if (e?.name === "ZodError") {
-      return res.status(400).json({ error: e.flatten() });
-    }
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    if (e instanceof ZodError) return res.status(400).json({ error: e.flatten() });
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -138,9 +124,7 @@ export async function getDashboard(req: Request, res: Response) {
     const offsetMs = 7 * 60 * 60 * 1000; // +07:00
     const now = new Date();
     const bkkNow = new Date(now.getTime() + offsetMs);
-    const yyyy = bkkNow.getUTCFullYear();
-    const mm = String(bkkNow.getUTCMonth() + 1).padStart(2, "0");
-    const dd = String(bkkNow.getUTCDate()).padStart(2, "0");
+  // derive week and month boundaries in Bangkok time
 
     const mondayDelta = ((bkkNow.getUTCDay() + 6) % 7); // 0=Mon,6=Sun delta from Monday
     const weekStartBkk = new Date(Date.UTC(bkkNow.getUTCFullYear(), bkkNow.getUTCMonth(), bkkNow.getUTCDate() - mondayDelta, 0, 0, 0));
@@ -284,7 +268,8 @@ export async function getDashboard(req: Request, res: Response) {
       },
       weeklyCases,
     });
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
