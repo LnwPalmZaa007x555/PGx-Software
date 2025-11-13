@@ -5,7 +5,11 @@ import { useEffect, useState } from "react";
 import { Eye, Trash2, Plus } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import styles from "./page.module.css";
-import { fetchPatients, deletePatientById, type PatientDto } from "@/utils/patients";
+import {
+  fetchPatients,
+  deletePatientById,
+  type PatientDto,
+} from "@/utils/patients";
 
 type PatientRow = {
   recordId: number;
@@ -13,7 +17,7 @@ type PatientRow = {
   firstName: string;
   lastName: string;
   sex: string;
-  age: number; // not available from backend; display "-" for now
+  age: number;
   phone: string;
   ethnicity: "thai" | "other";
   otherEthnicity?: string;
@@ -49,7 +53,6 @@ function toRows(items: PatientDto[]): PatientRow[] {
 export default function CaseListPage() {
   const { language } = useLanguage();
   const [patients, setPatients] = useState<PatientRow[]>([]);
-  const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,8 +62,14 @@ export default function CaseListPage() {
         const data = await fetchPatients();
         setPatients(toRows(data));
       } catch (e: unknown) {
-        const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
-        const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to load";
+        const apiErr = (e as { response?: { data?: { error?: unknown } } })
+          .response?.data?.error;
+        const msg =
+          typeof apiErr === "string"
+            ? apiErr
+            : e instanceof Error
+            ? e.message
+            : "Failed to load";
         setError(msg);
       } finally {
         setLoading(false);
@@ -68,10 +77,11 @@ export default function CaseListPage() {
     })();
   }, []);
 
-  const filtered =
-    filter === "all"
-      ? patients
-      : patients.filter((p) => p.status === filter);
+  // แยก 2 ตาราง
+  const pendingRows = patients.filter(
+    (p) => p.status === "pending_gene" || p.status === "pending_approve"
+  );
+  const approvedRows = patients.filter((p) => p.status === "approved");
 
   const handleDelete = async (idCard: string, recordId: number) => {
     if (
@@ -86,8 +96,14 @@ export default function CaseListPage() {
       await deletePatientById(recordId);
       setPatients((prev) => prev.filter((p) => p.idCard !== idCard));
     } catch (e: unknown) {
-      const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
-      const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Delete failed";
+      const apiErr = (e as { response?: { data?: { error?: unknown } } })
+        .response?.data?.error;
+      const msg =
+        typeof apiErr === "string"
+          ? apiErr
+          : e instanceof Error
+          ? e.message
+          : "Delete failed";
       alert(msg);
     }
   };
@@ -109,35 +125,17 @@ export default function CaseListPage() {
             <Plus size={18} style={{ marginRight: 6 }} />
             {language === "en" ? "Add New Case" : "เพิ่มเคสใหม่"}
           </Link>
-
-          <Link href="/gene" className={styles.secondaryBtn}>
-            {language === "en" ? "Gene Entry" : "กรอกข้อมูลยีน"}
-          </Link>
-
-          <Link href="/approve" className={styles.secondaryBtn}>
-            {language === "en" ? "Approval" : "อนุมัติผล"}
-          </Link>
         </div>
-
-        <select
-          className={styles.select}
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        >
-          <option value="all">{language === "en" ? "All" : "ทั้งหมด"}</option>
-          <option value="pending_gene">
-            {language === "en" ? "Pending Gene Entry" : "รอกรอกยีน"}
-          </option>
-          <option value="pending_approve">
-            {language === "en" ? "Pending Approval" : "รออนุมัติ"}
-          </option>
-          <option value="approved">
-            {language === "en" ? "Approved" : "อนุมัติแล้ว"}
-          </option>
-        </select>
       </div>
 
-      <div className={styles.tableBox}>
+      {/* ------------------------- TABLE 1 : PENDING ---------------------------- */}
+      <h2 className={styles.sectionTitle}>
+        {language === "en"
+          ? "Pending / Pending Approval"
+          : "รอกรอกยีน & รออนุมัติ"}
+      </h2>
+
+      <div className={styles.tableScroll}>
         <table className={styles.table}>
           <thead>
             <tr>
@@ -148,24 +146,26 @@ export default function CaseListPage() {
               <th>{language === "en" ? "Age" : "อายุ"}</th>
               <th>{language === "en" ? "Ethnicity" : "สัญชาติ"}</th>
               <th>{language === "en" ? "Status" : "สถานะ"}</th>
-              <th>{language === "en" ? "Actions" : "จัดการ"}</th>
             </tr>
           </thead>
+
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8} className={styles.empty}>Loading…</td>
+                <td colSpan={7} className={styles.empty}>
+                  Loading…
+                </td>
               </tr>
-            ) : filtered.length === 0 ? (
+            ) : pendingRows.length === 0 ? (
               <tr>
-                <td colSpan={8} className={styles.empty}>
+                <td colSpan={7} className={styles.empty}>
                   {language === "en"
-                    ? "No patient data found."
-                    : "ไม่พบข้อมูลผู้ป่วย"}
+                    ? "No pending cases."
+                    : "ไม่มีเคสที่รอดำเนินการ"}
                 </td>
               </tr>
             ) : (
-              filtered.map((p) => (
+              pendingRows.map((p) => (
                 <tr key={p.recordId}>
                   <td>{p.idCard}</td>
                   <td>
@@ -200,16 +200,88 @@ export default function CaseListPage() {
                       }`}
                     >
                       {language === "en"
-                        ? p.status?.replace("_", " ") || "Unknown"
+                        ? p.status.replace("_", " ")
                         : p.status === "pending_gene"
                         ? "รอกรอกยีน"
                         : p.status === "pending_approve"
                         ? "รออนุมัติ"
-                        : p.status === "approved"
-                        ? "อนุมัติแล้ว"
-                        : "ไม่ทราบสถานะ"}
+                        : "อนุมัติแล้ว"}
                     </span>
                   </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* ------------------------- TABLE 2 : APPROVED ---------------------------- */}
+      <h2 className={styles.sectionTitle}>
+        {language === "en" ? "Approved" : "อนุมัติแล้ว"}
+      </h2>
+
+      <div className={styles.tableScroll}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>HN</th>
+              <th>{language === "en" ? "Name" : "ชื่อ-นามสกุล"}</th>
+              <th>{language === "en" ? "Phone" : "เบอร์โทร"}</th>
+              <th>{language === "en" ? "Sex" : "เพศ"}</th>
+              <th>{language === "en" ? "Age" : "อายุ"}</th>
+              <th>{language === "en" ? "Ethnicity" : "สัญชาติ"}</th>
+              <th>{language === "en" ? "Status" : "สถานะ"}</th>
+              <th>{language === "en" ? "Actions" : "จัดการ"}</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={8} className={styles.empty}>
+                  Loading…
+                </td>
+              </tr>
+            ) : approvedRows.length === 0 ? (
+              <tr>
+                <td colSpan={8} className={styles.empty}>
+                  {language === "en"
+                    ? "No approved cases."
+                    : "ไม่มีเคสที่อนุมัติแล้ว"}
+                </td>
+              </tr>
+            ) : (
+              approvedRows.map((p) => (
+                <tr key={p.recordId}>
+                  <td>{p.idCard}</td>
+                  <td>
+                    {p.firstName} {p.lastName}
+                  </td>
+                  <td>{p.phone}</td>
+                  <td>
+                    {p.sex === "male"
+                      ? language === "en"
+                        ? "Male"
+                        : "ชาย"
+                      : language === "en"
+                      ? "Female"
+                      : "หญิง"}
+                  </td>
+                  <td>{p.age}</td>
+                  <td>
+                    {p.ethnicity === "thai"
+                      ? language === "en"
+                        ? "Thai"
+                        : "ไทย"
+                      : p.otherEthnicity || "-"}
+                  </td>
+
+                  <td>
+                    <span className={`${styles.status} ${styles.approved}`}>
+                      {language === "en" ? "Approved" : "อนุมัติแล้ว"}
+                    </span>
+                  </td>
+
                   <td className={styles.rowActions}>
                     <Link
                       href={`/case/${p.idCard}`}
@@ -229,10 +301,13 @@ export default function CaseListPage() {
             )}
           </tbody>
         </table>
-        {error && (
-          <div className={styles.empty} style={{ color: "#e55353" }}>{error}</div>
-        )}
       </div>
+
+      {error && (
+        <div className={styles.empty} style={{ color: "#e55353" }}>
+          {error}
+        </div>
+      )}
     </div>
   );
 }
