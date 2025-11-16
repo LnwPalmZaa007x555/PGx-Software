@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { supabase } from "../supabaseClient";
 import type { Result, NewResult, UpdateResult } from "../types/result";
+import type { Patient } from "../types/user/patients";
 import { PK_FIELD_BY_TABLE } from "../util/constant";
 
 // GET /api/results?limit=20&offset=0&status=completed&patient=123
@@ -108,7 +109,8 @@ export async function getLatestByPatientWithGene(req: Request, res: Response, ne
       .from("Gene")
       .select("gene_id, gene_name")
   .eq("gene_id", r.gene_id)
-      .single();
+    .single()
+    .returns<{ gene_id: number; gene_name: string }>();
     if (gErr || !geneRow) return res.status(404).json({ error: gErr?.message || "Gene not found" });
 
   const dbGeneName = String(geneRow.gene_name); // e.g., CYP2C19 or HLA_B
@@ -187,6 +189,126 @@ export async function getLatestByPatientWithGene(req: Request, res: Response, ne
       recommend,
     });
     
+  } catch (e) { next(e); }
+}
+
+// GET /api/results/by-idcard/:idCard/latest
+// Resolve HN (Id_Card) -> Patient_Id, then return latest result with gene details
+// ดึงอันนี้น้ะจ้ะ ไปใช้ทำ pdf ลูก เผื่อตอนดึงใช้ id_card แทน patient_id ในการเทส postman น้ะจ้ะ
+export async function getLatestByIdCardWithGene(req: Request, res: Response, next: NextFunction) {
+  try {
+    const idCard = String(req.params.idCard || "").trim();
+    if (!idCard) return res.status(400).json({ error: "Invalid id_card" });
+
+    // 0) Find patient by Id_Card (HN)
+    const { data: patientRow, error: pErr } = await supabase
+      .from("Patients")
+      .select("*")
+      .eq("Id_Card", idCard)
+      .single();
+    if (pErr || !patientRow) return res.status(404).json({ error: pErr?.message || "Patient not found" });
+
+    const patient = patientRow as Patient;
+
+    const patientId = Number(patient.Patient_Id);
+    if (!Number.isFinite(patientId)) return res.status(400).json({ error: "Invalid mapped patient id" });
+
+    // 1) Latest result for this patient
+    const { data: result, error: rErr } = await supabase
+      .from("Result")
+      .select("*")
+      .eq("Patient_Id", patientId)
+      .order("Result_Id", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (rErr) return res.status(500).json({ error: rErr.message });
+    if (!result) return res.status(204).send();
+    const r = result as Result;
+
+    // 2) Resolve gene name
+    const { data: geneRow, error: gErr } = await supabase
+      .from("Gene")
+      .select("gene_id, gene_name")
+      .eq("gene_id", r.gene_id)
+      .single()
+      .returns<{ gene_id: number; gene_name: string }>();
+    if (gErr || !geneRow) return res.status(404).json({ error: gErr?.message || "Gene not found" });
+
+    const dbGeneName = String(geneRow.gene_name);
+    const uiGeneName = dbGeneName === "HLA_B" ? "HLA-B*15:02" : dbGeneName;
+
+    const pkField = PK_FIELD_BY_TABLE[dbGeneName];
+    if (!pkField) return res.status(400).json({ error: `Unsupported gene table: ${dbGeneName}` });
+
+    // 3) Fetch gene info row
+    const { data: geneInfoRow, error: giErr } = await supabase
+      .from(dbGeneName)
+      .select("*")
+      .eq(pkField, r.gene_information)
+      .single();
+    if (giErr || !geneInfoRow) return res.status(404).json({ error: giErr?.message || "Gene information not found" });
+
+    // 4) Map to markers
+    const markers: Record<string, string> = {};
+    const row = geneInfoRow as Record<string, unknown>;
+    const getStr = (k: string, fallback = "") => {
+      const v = row[k];
+      return typeof v === "string" ? v : fallback;
+    };
+
+    switch (dbGeneName) {
+      case "CYP2C19":
+        markers["CYP2C19*2 (681G>A)"] = getStr("CYPx2_681G");
+        markers["CYP2C19*3 (636G>A)"] = getStr("CYPx3_636G");
+        markers["CYP2C19*17 (-806C>T)"] = getStr("CYPx17_806C");
+        break;
+      case "CYP2C9":
+        markers["CYP2C9*2 (430C>T)"] = getStr("CYP2C9x2_430C");
+        markers["CYP2C9*3 (1075A>C)"] = getStr("CYP2C9x3_1075A");
+        break;
+      case "CYP2D6":
+        markers["CYP2D6*4 (1847G>A)"] = getStr("CYP2D6x4_1847G", "-");
+        markers["CYP2D6*10 (100C>T)"] = getStr("CYP2D6x10_100C", "-");
+        markers["CYP2D6*41 (2989G>A)"] = getStr("CYP2D6x41_2989G", "-");
+        markers["CNV intron 2"] = getStr("CNV_Intron");
+        markers["CNV exon 9"] = getStr("CNV_Exon");
+        break;
+      case "CYP3A5":
+        markers["CYP3A5*3 (6986A>G)"] = getStr("CYP3A5x3_6986A");
+        break;
+      case "VKORC1":
+        markers["VKORC1 (1173C>T)"] = getStr("VKORC1_1173C");
+        markers["VKORC1 (-1639G>A)"] = getStr("VKORC1_1639G");
+        break;
+      case "TPMT":
+        markers["TPMT*3C (719A>G)"] = getStr("TPMTx3C_719A");
+        break;
+      case "HLA_B":
+        markers["HLA-B*15:02 status"] = getStr("status");
+        break;
+      default:
+        break;
+    }
+
+    const predict_pheno = ((): string | null => {
+      const p1 = row["Predict_Pheno"]; if (typeof p1 === "string") return p1;
+      const p2 = row["phenotype"]; if (typeof p2 === "string") return p2;
+      return null;
+    })();
+    const recommend = ((): string | null => {
+      const r1 = row["Recommend"]; if (typeof r1 === "string") return r1;
+      const r2 = row["recommend"]; if (typeof r2 === "string") return r2;
+      return null;
+    })();
+
+    return res.json({
+      patient,
+      result,
+      gene: { gene_id: geneRow.gene_id, gene_name: uiGeneName },
+      markers,
+      predict_pheno,
+      recommend,
+    });
   } catch (e) { next(e); }
 }
 
