@@ -131,16 +131,10 @@ export default function AdminPanel() {
         },
       ]);
       setShowAddUser(false);
-<<<<<<< HEAD
-    } catch (e: any) {
-      const msg = e?.response?.data?.error || e?.message || "Failed to create staff";
-      setAddError(typeof msg === "string" ? msg : lang === "en" ? "Validation error" : "ข้อมูลไม่ถูกต้อง");
-=======
     } catch (e: unknown) {
       const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
       const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to create staff";
       setAddError(typeof msg === "string" ? msg : (lang === "en" ? "Validation error" : "ข้อมูลไม่ถูกต้อง"));
->>>>>>> Endplease
     } finally {
       setAdding(false);
     }
@@ -192,15 +186,10 @@ export default function AdminPanel() {
       }
       setResetTarget(staff);
       setResetStep("set");
-<<<<<<< HEAD
-    } catch (e: any) {
-      setResetError(e?.response?.data?.error || e?.message || "Failed to verify email");
-=======
     } catch (e: unknown) {
       const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
       const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to verify email";
       setResetError(msg);
->>>>>>> Endplease
     } finally {
       setResetBusy(false);
     }
@@ -217,15 +206,10 @@ export default function AdminPanel() {
       setResetBusy(true);
       await resetStaffPasswordById(resetTarget.Staff_Id, resetPwd);
       setShowResetPwd(false);
-<<<<<<< HEAD
-    } catch (e: any) {
-      setResetError(e?.response?.data?.error || e?.message || "Failed to reset password");
-=======
     } catch (e: unknown) {
       const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
       const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to reset password";
       setResetError(msg);
->>>>>>> Endplease
     } finally {
       setResetBusy(false);
     }
