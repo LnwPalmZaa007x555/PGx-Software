@@ -290,6 +290,11 @@ export async function getLatestByIdCardWithGene(req: Request, res: Response, nex
         break;
     }
 
+    const predict_geno = ((): string | null => {
+      const p1 = row["Predict_Geno"]; if (typeof p1 === "string") return p1;
+      const p2 = row["Genotype"]; if (typeof p2 === "string") return p2;
+      return null;
+    })();
     const predict_pheno = ((): string | null => {
       const p1 = row["Predict_Pheno"]; if (typeof p1 === "string") return p1;
       const p2 = row["phenotype"]; if (typeof p2 === "string") return p2;
@@ -306,6 +311,7 @@ export async function getLatestByIdCardWithGene(req: Request, res: Response, nex
       result,
       gene: { gene_id: geneRow.gene_id, gene_name: uiGeneName },
       markers,
+      predict_geno,
       predict_pheno,
       recommend,
     });

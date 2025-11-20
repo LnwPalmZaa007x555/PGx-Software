@@ -58,6 +58,11 @@ const Sidebar = ({
     router.push("/login");
   };
 
+  // who can see Approve menu
+  const canSeeApprove = ["admin", "doctor", "pharmacist"].includes(
+    String(user?.Role || "").toLowerCase()
+  );
+
   // 🌍 เมนูหลักของ PGx Platform
   const menu = [
     {
@@ -75,11 +80,17 @@ const Sidebar = ({
       path: "/gene",
       icon: <Dna size={22} />,
     },
-    {
-      name: language === "en" ? "Approve" : "กรอกข้อมูลยีน",
-      path: "/approve",
-      icon: <ClipboardCheck size={22} />,
-    },
+    ...(
+      canSeeApprove
+        ? [
+            {
+              name: language === "en" ? "Approve" : "กรอกข้อมูลยีน",
+              path: "/approve",
+              icon: <ClipboardCheck size={22} />,
+            },
+          ]
+        : []
+    ),
     {
       name: language === "en" ? "Specimen Accessioning" : "รับสิ่งส่งตรวจ",
       path: "/specimen",

@@ -42,8 +42,6 @@ export default function LoginPage() {
             ? err.message
             : "Login failed";
         setErrors({ password: msg });
-        //palm1@example.com
-        //secretpass123
       }
     }
   };
