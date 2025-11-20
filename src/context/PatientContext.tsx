@@ -6,7 +6,7 @@ export type Patient = {
   firstName: string;
   lastName: string;
   sex: string;
-  dob: string;
+  age: number | string;
   phone: string;
   ethnicity: string;
   otherEthnicity?: string;

@@ -27,7 +27,11 @@ export async function createStaff(newStaff: {
   Hospital_Name: string;
   password?: string; // optional override
 }): Promise<StaffDto> {
+<<<<<<< HEAD
   const payload = { ...newStaff, password: newStaff.password || "secretpass123" };
+=======
+  const payload = { ...newStaff, password: newStaff.password ?? "secretpass123" };
+>>>>>>> Endplease
   const { data } = await apiClient.post<StaffDto>("/staff", payload);
   return data;
 }
@@ -36,7 +40,11 @@ export async function fetchStaffByEmail(email: string): Promise<StaffDto | null>
   // There's no explicit endpoint; get all and filter client-side (admin-only view).
   // If dataset is large, consider adding /staff/by-email on server.
   const all = await fetchStaff();
+<<<<<<< HEAD
   const found = all.find((s) => (s.email || "").toLowerCase() === email.toLowerCase());
+=======
+  const found = all.find((s) => (s.email ?? "").toLowerCase() === email.toLowerCase());
+>>>>>>> Endplease
   return found ?? null;
 }
 

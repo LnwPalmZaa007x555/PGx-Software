@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-namespace */
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
@@ -26,7 +27,8 @@ export function auth(req: Request, res: Response, next: NextFunction) {
     const decoded = jwt.verify(token, JWT_SECRET) as AuthUser;
     req.user = decoded;
     next();
-  } catch (e: any) {
-    return res.status(401).json({ error: "Invalid or expired token" });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Invalid or expired token";
+    return res.status(401).json({ error: msg });
   }
 }

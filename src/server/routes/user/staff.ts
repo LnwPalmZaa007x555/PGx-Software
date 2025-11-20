@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {getStaff,getStaffById,createStaff,updateStaffById,deleteStaffById,}
+import {getStaff,getStaffById,createStaff,updateStaffById,deleteStaffById,getStaffExists,resetStaffPasswordByEmail,}
 from "../../controllers/user/staff";
 import { auth } from "../../middlewares/auth";
 import { requireRole } from "../../middlewares/requireRole";
@@ -11,7 +11,9 @@ router.use(auth, requireRole("admin"));
 
 router.get("/", getStaff);
 router.get("/:id", getStaffById);
+router.get("/exists", getStaffExists);
 router.post("/", createStaff);
+router.post("/reset-password", resetStaffPasswordByEmail);
 router.put("/:id", updateStaffById);
 router.delete("/:id", deleteStaffById);
 

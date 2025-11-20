@@ -5,6 +5,7 @@ import { newCYP2D6Schema, updateCYP2D6Schema } from "../../schemas/gene/cyp2d6.s
 import { newResultSchema } from "../../schemas/result.schema";
 import { NewResult } from "../../types/result";
 import { PK_FIELD_BY_TABLE } from "../../util/constant";
+import { ZodError } from "zod";
 
 // GET /api/cyp2d6
 export async function getCYP2D6(_req: Request, res: Response) {
@@ -17,8 +18,9 @@ export async function getCYP2D6(_req: Request, res: Response) {
 
     if (error) return res.status(500).json({ error: error.message });
     return res.json(data);
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -38,8 +40,9 @@ export async function getCYP2D6ById(req: Request, res: Response) {
 
     if (error) return res.status(404).json({ error: error.message });
     return res.json(data);
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -55,9 +58,10 @@ export async function createCYP2D6(req: Request, res: Response) {
       .returns<CYP2D6>();
     if (error) return res.status(400).json({ error: error.message });
     return res.status(201).json(data);
-  } catch (e: any) {
-    if (e?.name === "ZodError") return res.status(400).json({ error: e.flatten() });
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    if (e instanceof ZodError) return res.status(400).json({ error: e.flatten() });
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -78,9 +82,10 @@ export async function updateCYP2D6ById(req: Request, res: Response) {
       .returns<CYP2D6>();
     if (error) return res.status(400).json({ error: error.message });
     return res.status(200).json(data);
-  } catch (e: any) {
-    if (e?.name === "ZodError") return res.status(400).json({ error: e.flatten() });
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    if (e instanceof ZodError) return res.status(400).json({ error: e.flatten() });
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -97,8 +102,9 @@ export async function deleteCYP2D6ById(req: Request, res: Response) {
       .eq("2D6_Id", idNum);
     if (error) return res.status(500).json({ error: error.message });
     return res.json({ ok: true, message: `CYP2D6 ${idNum} deleted` });
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -142,7 +148,7 @@ export async function saveToResult(req: Request, res: Response) {
         if (tableErr) return res.status(500).json({ error: tableErr.message });
         if (!geneRow) return res.status(404).json({ error: "No matching gene record found" });
 
-        const gene_information = Number((geneRow as any)[pkField]);
+  const gene_information = Number((geneRow as Record<string, unknown>)[pkField] as unknown);
         if (!Number.isFinite(gene_information)) {
             return res.status(500).json({error: `Primary  key field "${pkField}" not found in ${geneName} row` });
         }
@@ -186,13 +192,14 @@ export async function saveToResult(req: Request, res: Response) {
                 ...enriched,
                 gene_meta:{
                     gene_name: geneName,
-                    predict_pheno: (geneRow as any).Predict_Pheno ?? null,
-                    recommend: (geneRow as any).Recommend ?? null,
+                    predict_pheno: (geneRow as Record<string, unknown>)["Predict_Pheno"] as string | null ?? null,
+                    recommend: (geneRow as Record<string, unknown>)["Recommend"] as string | null ?? null,
                 },
             }
             return res.status(201).json(response);
-    } catch (e : any) {
-        console.error("[saveToResult ERROR]", e);
-        return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e : unknown) {
+    console.error("[saveToResult ERROR]", e);
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
     }
 }

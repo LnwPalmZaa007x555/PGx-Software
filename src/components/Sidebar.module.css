@@ -204,13 +204,23 @@
   background: #256349;
   color: #ffffff;
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> Endplease
 .profileWrapper {
   display: flex;
   align-items: center;
   justify-content: center;
+<<<<<<< HEAD
   padding: 0.8rem 0; /* ลดลงนิดให้บาลานซ์กับ logout */
   border-top: 1px solid rgba(255, 255, 255, 0.15);
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+=======
+  padding: 0rem 0; /* ลดลงนิดให้บาลานซ์กับ logout */
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.15);
+>>>>>>> Endplease
   margin-top: 0.8rem;
 }
 
@@ -225,7 +235,11 @@
   display: flex;
   flex-direction: column;
   font-size: 0.9rem;
+<<<<<<< HEAD
   line-height: 0.7; /* ✅ ปรับ spacing ให้สบายตา */
+=======
+  line-height: 1; /* ✅ ปรับ spacing ให้สบายตา */
+>>>>>>> Endplease
   overflow: hidden;
 }
 
@@ -237,14 +251,23 @@
 }
 
 .profileRole {
+<<<<<<< HEAD
   color: #cdebd5;
+=======
+  color: #ffffff;
+>>>>>>> Endplease
   font-size: 0.85rem;
   margin-bottom: 0.15rem;
 }
 
 .profileEmail {
+<<<<<<< HEAD
   color: #b5b5b5;
   font-size: 0.85rem; /* ✅ เล็กกว่าชื่อและ role */
+=======
+  color: #ffffff;
+  font-size: 0.8rem; /* ✅ เล็กกว่าชื่อและ role */
+>>>>>>> Endplease
 }
 
 /* collapse state */
@@ -256,4 +279,8 @@
 /* 🌙 dark mode */
 :global(html.dark) .profileDisplay {
   background: rgba(255, 255, 255, 0.05);
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> Endplease

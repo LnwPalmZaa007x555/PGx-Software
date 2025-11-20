@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Shield,
   Users,
   FileLock,
   Link,
@@ -52,7 +51,6 @@ type PDPAItemKey =
 type IntegrationKey = "his" | "analyzer" | "external";
 
 /* Helpers */
-const uid = () => Math.random().toString(36).slice(2, 9);
 
 export default function AdminPanel() {
   const { language } = useLanguage();
@@ -83,8 +81,10 @@ export default function AdminPanel() {
           role: (s.Role as RoleOption) || "Doctor",
         }));
         setUsers(mapped);
-      } catch (e: any) {
-        setError(e?.response?.data?.error || e?.message || "Failed to load staff");
+      } catch (e: unknown) {
+        const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+        const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to load staff";
+        setError(msg);
       } finally {
         setLoading(false);
       }
@@ -131,9 +131,16 @@ export default function AdminPanel() {
         },
       ]);
       setShowAddUser(false);
+<<<<<<< HEAD
     } catch (e: any) {
       const msg = e?.response?.data?.error || e?.message || "Failed to create staff";
       setAddError(typeof msg === "string" ? msg : lang === "en" ? "Validation error" : "ข้อมูลไม่ถูกต้อง");
+=======
+    } catch (e: unknown) {
+      const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+      const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to create staff";
+      setAddError(typeof msg === "string" ? msg : (lang === "en" ? "Validation error" : "ข้อมูลไม่ถูกต้อง"));
+>>>>>>> Endplease
     } finally {
       setAdding(false);
     }
@@ -185,8 +192,15 @@ export default function AdminPanel() {
       }
       setResetTarget(staff);
       setResetStep("set");
+<<<<<<< HEAD
     } catch (e: any) {
       setResetError(e?.response?.data?.error || e?.message || "Failed to verify email");
+=======
+    } catch (e: unknown) {
+      const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+      const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to verify email";
+      setResetError(msg);
+>>>>>>> Endplease
     } finally {
       setResetBusy(false);
     }
@@ -203,8 +217,15 @@ export default function AdminPanel() {
       setResetBusy(true);
       await resetStaffPasswordById(resetTarget.Staff_Id, resetPwd);
       setShowResetPwd(false);
+<<<<<<< HEAD
     } catch (e: any) {
       setResetError(e?.response?.data?.error || e?.message || "Failed to reset password");
+=======
+    } catch (e: unknown) {
+      const apiErr = (e as { response?: { data?: { error?: unknown } } }).response?.data?.error;
+      const msg = typeof apiErr === "string" ? apiErr : e instanceof Error ? e.message : "Failed to reset password";
+      setResetError(msg);
+>>>>>>> Endplease
     } finally {
       setResetBusy(false);
     }
@@ -262,7 +283,7 @@ export default function AdminPanel() {
   const [licenseModal, setLicenseModal] = useState(false);
 
   /* ---------------- Audit ---------------- */
-  const [logs, setLogs] = useState<Audit[]>([
+  const [logs] = useState<Audit[]>([
     { id: "1", user: "Admin", action: "Login", timestamp: "2025-11-01 09:20" },
     { id: "2", user: "Somchai", action: "Viewed Patient #102", timestamp: "2025-11-01 10:05" },
     { id: "3", user: "Anan", action: "Edited SOP#2", timestamp: "2025-11-01 13:12" },

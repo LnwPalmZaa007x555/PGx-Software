@@ -119,7 +119,7 @@ export async function saveGeneResult(
     geneid: geneId,
     staff_id: staff.Staff_Id,
     ...mapMarkersToBackend(geneKey, markerValues),
-  } as Record<string, any>;
+  } as Record<string, string | number | null>;
 
   const { data } = await apiClient.post(`${route}/save`, payload);
   return data;

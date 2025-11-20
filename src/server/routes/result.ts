@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { listResults, getResultById, createResult, updateResult, deleteResult, getLatestByPatientWithGene } from "../controllers/result";
+import { listResults, getResultById, createResult, updateResult, deleteResult, getLatestByPatientWithGene, getLatestByIdCardWithGene } from "../controllers/result";
 import { validate } from "../middlewares/validate";
 import { auth } from "../middlewares/auth";
 import { requireRole } from "../middlewares/requireRole";
@@ -10,6 +10,7 @@ const router = Router();
 router.get("/", auth, listResults);
 router.get("/:id", auth, validate(resultIdParamSchema), getResultById);
 router.get("/by-patient/:patientId/latest", auth, getLatestByPatientWithGene);
+router.get("/by-idcard/:idCard/latest", auth, getLatestByIdCardWithGene);
 
 const canWrite = ["Admin", "Doctor", "MedTech", "Pharmacist"];
 

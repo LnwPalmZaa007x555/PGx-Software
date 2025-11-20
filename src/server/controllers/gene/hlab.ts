@@ -5,6 +5,7 @@ import { newHLABSchema, updateHLABSchema } from "../../schemas/gene/hlab.schema"
 import { newResultSchema } from "../../schemas/result.schema";
 import { NewResult } from "../../types/result";
 import { PK_FIELD_BY_TABLE } from "../../util/constant";
+import { ZodError } from "zod";
 
 // GET /api/hlab
 export async function getHLAB(_req: Request, res: Response) {
@@ -17,8 +18,9 @@ export async function getHLAB(_req: Request, res: Response) {
 
     if (error) return res.status(500).json({ error: error.message });
     return res.json(data);
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -39,8 +41,9 @@ export async function getHLABById(req: Request, res: Response) {
 
     if (error) return res.status(404).json({ error: error.message });
     return res.json(data);
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -57,9 +60,10 @@ export async function createHLAB(req: Request, res: Response) {
 
     if (error) return res.status(400).json({ error: error.message });
     return res.status(201).json(data);
-  } catch (e: any) {
-    if (e?.name === "ZodError") return res.status(400).json({ error: e.flatten() });
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    if (e instanceof ZodError) return res.status(400).json({ error: e.flatten() });
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -82,9 +86,10 @@ export async function updateHLABById(req: Request, res: Response) {
 
     if (error) return res.status(400).json({ error: error.message });
     return res.status(200).json(data);
-  } catch (e: any) {
-    if (e?.name === "ZodError") return res.status(400).json({ error: e.flatten() });
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    if (e instanceof ZodError) return res.status(400).json({ error: e.flatten() });
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -100,8 +105,9 @@ export async function deleteHLABById(req: Request, res: Response) {
     if (error) return res.status(500).json({ error: error.message });
 
     return res.json({ ok: true, message: `HLA_B ${idNum} deleted` });
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -152,7 +158,7 @@ export async function saveToResult(req: Request, res: Response) {
     if (!geneRow)  return res.status(404).json({ error: "No HLA_B record found for provided HLA_Gene & status" });
 
     console.log(geneRow);
-    const gene_information = Number((geneRow as any)[pkField]);
+  const gene_information = Number((geneRow as Record<string, unknown>)[pkField] as unknown);
     if (!Number.isFinite(gene_information)) {
       return res.status(500).json({ error: `Primary key field "${pkField}" not found in ${geneName} row` });
     }
@@ -202,13 +208,14 @@ console.log(gene_information);
         gene_name: geneName,
         hla_gene: hlaGene,
         status,
-        phenotype: (geneRow as any).phenotype ?? null,
-        recommend: (geneRow as any).recommend ?? null,
+  phenotype: (geneRow as Record<string, unknown>)["phenotype"] as string | null ?? null,
+  recommend: (geneRow as Record<string, unknown>)["recommend"] as string | null ?? null,
       },
     };
     return res.status(201).json(response);
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("[saveToResult ERROR]", e);
-    return res.status(500).json({ error: String(e?.message || e) });
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }

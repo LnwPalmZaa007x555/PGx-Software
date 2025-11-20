@@ -13,7 +13,7 @@ interface Patient {
   firstName: string;
   lastName: string;
   sex: string;
-  dob: string;
+  age: number | string; // stored numeric age or string from legacy localStorage
   phone: string;
   ethnicity: string;
   otherEthnicity?: string;
@@ -117,8 +117,8 @@ export default function PatientDetailPage() {
               : "หญิง"}
           </li>
           <li>
-            <strong>{language === "en" ? "DOB" : "วันเกิด"}:</strong>{" "}
-            {patient.dob}
+            <strong>{language === "en" ? "Age" : "อายุ"}:</strong>{" "}
+            {patient.age || (language === "en" ? "-" : "-")}
           </li>
           <li>
             <strong>{language === "en" ? "Phone" : "เบอร์โทร"}:</strong>{" "}

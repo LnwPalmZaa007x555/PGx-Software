@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt, { SignOptions } from "jsonwebtoken";
 import { supabase } from "../supabaseClient";
 import { registerSchema, loginSchema } from "../schemas/auth.schema";
+import { ZodError } from "zod";
 
 const PUBLIC_COLUMNS = "Staff_Id, Fname, Lname, Role, email, Hospital_Name";
 
@@ -13,7 +14,11 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1d";
 if (!JWT_SECRET) {
   throw new Error("Missing JWT_SECRET in .env");
 }
-const SIGN_OPTS: SignOptions = { expiresIn: JWT_EXPIRES_IN as any };
+// expiresIn accepts number of seconds or a string like "1d"
+const expiresInValue: SignOptions["expiresIn"] = Number.isFinite(Number(JWT_EXPIRES_IN))
+  ? Number(JWT_EXPIRES_IN)
+  : (JWT_EXPIRES_IN as unknown as SignOptions["expiresIn"]);
+const SIGN_OPTS: SignOptions = { expiresIn: expiresInValue };
 
 
 // POST /api/auth/register
@@ -50,9 +55,10 @@ export async function register(req: Request, res: Response) {
     );
 
     return res.status(201).json({ token, user: data });
-  } catch (e: any) {
-    if (e?.name === "ZodError") return res.status(400).json({ error: e.flatten() });
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    if (e instanceof ZodError) return res.status(400).json({ error: e.flatten() });
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
@@ -89,16 +95,18 @@ export async function login(req: Request, res: Response) {
     );
 
     return res.json({ token, user: publicUser });
-  } catch (e: any) {
-    if (e?.name === "ZodError") return res.status(400).json({ error: e.flatten() });
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    if (e instanceof ZodError) return res.status(400).json({ error: e.flatten() });
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }
 
 // GET /api/auth/me  (ต้องแนบ Bearer token) — ต้องมี middleware auth ใส่ req.user ให้ก่อน
-export async function me(req: Request, res: Response) {
+type AuthenticatedRequest = Request & { user?: { sid?: number; role?: string; email?: string } };
+export async function me(req: AuthenticatedRequest, res: Response) {
   try {
-    const sid = (req as any).user?.sid; // หรือประกาศ type เพิ่มใน middleware
+    const sid = req.user?.sid;
     if (!sid) return res.status(401).json({ error: "Unauthenticated" });
 
     const { data, error } = await supabase
@@ -109,7 +117,8 @@ export async function me(req: Request, res: Response) {
 
     if (error) return res.status(404).json({ error: error.message });
     return res.json({ user: data });
-  } catch (e: any) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return res.status(500).json({ error: msg });
   }
 }

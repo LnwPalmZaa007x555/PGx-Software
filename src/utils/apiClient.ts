@@ -1,4 +1,4 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosError, InternalAxiosRequestConfig, AxiosRequestHeaders } from "axios";
 
 // Base URL can be overridden via env; default to local backend
 const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000/api";
@@ -41,10 +41,10 @@ apiClient.interceptors.response.use(
         if (newRefresh) localStorage.setItem("refreshToken", newRefresh);
 
         // retry original with new token
-        original.headers = original.headers || {};
-        (original.headers as any)["Authorization"] = `Bearer ${newToken}`;
+        original.headers = (original.headers || {}) as AxiosRequestHeaders;
+        original.headers["Authorization"] = `Bearer ${newToken}`;
         return apiClient.request(original);
-      } catch (e) {
+      } catch {
         // refresh failed: clear tokens and propagate error
         localStorage.removeItem("token");
         localStorage.removeItem("refreshToken");
