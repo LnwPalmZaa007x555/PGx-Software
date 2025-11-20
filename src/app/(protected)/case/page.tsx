@@ -11,6 +11,13 @@ import {
   type PatientDto,
 } from "@/utils/patients";
 
+// 👉 ใช้ utils ดึง latest-result ตาม idCard (HN)
+import {
+  fetchLatestResultByIdCard,
+  type LatestWithGeneDto,
+} from "@/utils/results";
+
+// ==================== Types ====================
 type PatientRow = {
   recordId: number;
   idCard: string;
@@ -24,6 +31,7 @@ type PatientRow = {
   status: "pending_gene" | "pending_approve" | "approved";
 };
 
+// ==================== Helpers: map status / rows ====================
 function mapStatus(s: string): PatientRow["status"] {
   const v = (s || "").toLowerCase();
   if (v === "pending") return "pending_gene";
@@ -40,7 +48,7 @@ function toRows(items: PatientDto[]): PatientRow[] {
       idCard: p.Id_Card,
       firstName: p.Fname,
       lastName: p.Lname,
-      sex: (p.Gender || "").toLowerCase() as "male" | "female",
+      sex: (p.Gender || "").toLowerCase(), // "male" | "female"
       age: p.Age,
       phone: p.Phone,
       ethnicity: isThai ? "thai" : "other",
@@ -50,6 +58,340 @@ function toRows(items: PatientDto[]): PatientRow[] {
   });
 }
 
+// ==================== PDF helpers ====================
+// ⚠️ อย่าลืมวางไฟล์จริงใน /public/templates/ ตามชื่อด้านล่างนี้
+//   /public/templates/CYP2C9.pdf
+//   /public/templates/CYP2C19.pdf
+//   /public/templates/CYP2D6.pdf
+//   /public/templates/CYP3A5.pdf
+//   /public/templates/VKORC1.pdf
+//   /public/templates/TPMT.pdf
+//   /public/templates/HLA_B_1502.pdf
+//   /public/templates/DEFAULT_PGX.pdf
+
+function getPdfTemplatePathFromGene(geneNameRaw?: string): string {
+  if (!geneNameRaw) return "/templates/DEFAULT_PGX.pdf";
+
+  const g = geneNameRaw.toUpperCase().trim();
+
+  // จัดการเคส HLA_B / HLA-B*15:02
+  if (g === "HLA_B" || g.includes("HLA-B")) {
+    return "/templates/HLA_B_1502.pdf";
+  }
+
+  if (g === "CYP2C9" || g.includes("CYP2C9")) {
+    return "/templates/CYP2C9.pdf";
+  }
+
+  if (g === "CYP2C19" || g.includes("CYP2C19")) {
+    return "/templates/CYP2C19.pdf";
+  }
+
+  if (g === "CYP2D6" || g.includes("CYP2D6")) {
+    return "/templates/CYP2D6.pdf";
+  }
+
+  if (g === "CYP3A5" || g.includes("CYP3A5")) {
+    return "/templates/CYP3A5.pdf";
+  }
+
+  if (g === "VKORC1" || g.includes("VKORC1")) {
+    return "/templates/VKORC1.pdf";
+  }
+
+  if (g === "TPMT" || g.includes("TPMT")) {
+    return "/templates/TPMT.pdf";
+  }
+
+  // ถ้าไม่รู้จัก → ใช้ DEFAULT
+  return "/templates/DEFAULT_PGX.pdf";
+}
+
+// Uint8Array → ArrayBuffer (กัน TS งอแง)
+function u8ToArrayBuffer(u8: Uint8Array): ArrayBuffer {
+  const buffer = new ArrayBuffer(u8.byteLength);
+  const view = new Uint8Array(buffer);
+  view.set(u8);
+  return buffer;
+}
+
+// ==================== เปิด PDF เทมเพลต + ดึง result จาก API แล้วเขียนลง ====================
+async function openFilledPdf(patient: PatientRow, language: string) {
+  try {
+    // 🔹 ใช้ utils เรียก backend: /results/by-idcard/:idCard/latest-with-gene
+    const latest: LatestWithGeneDto = await fetchLatestResultByIdCard(
+      patient.idCard
+    );
+
+    const geneName = latest.gene?.gene_name || "";
+    const templatePath = getPdfTemplatePathFromGene(geneName);
+
+    // 1) dynamic import pdf-lib / fontkit (กัน SSR ป่วน)
+    const pdfLib = await import("pdf-lib");
+    const fontkitModule = await import("@pdf-lib/fontkit");
+    const { PDFDocument, rgb } = pdfLib;
+    const fontkit = fontkitModule.default;
+
+    // 2) โหลด template ตามยีน + ฟอนต์ไทย
+    const [tplAB, fontAB] = await Promise.all([
+      fetch(templatePath).then((r) => {
+        if (!r.ok) {
+          throw new Error(`โหลดไฟล์เทมเพลตไม่สำเร็จ: ${templatePath}`);
+        }
+        return r.arrayBuffer();
+      }),
+      fetch("/fonts/THSarabunNew.ttf").then((r) => {
+        if (!r.ok) throw new Error("โหลดฟอนต์ THSarabunNew ไม่สำเร็จ");
+        return r.arrayBuffer();
+      }),
+    ]);
+
+    const pdfDoc = await PDFDocument.load(tplAB);
+    pdfDoc.registerFontkit(fontkit);
+    const thaiFont = await pdfDoc.embedFont(fontAB);
+
+    const page = pdfDoc.getPage(0);
+    const draw = (text: string | number, x: number, y: number, size = 12) =>
+      page.drawText(String(text ?? "-"), {
+        x,
+        y,
+        size,
+        font: thaiFont,
+        color: rgb(0, 0, 0),
+      });
+
+    const isEn = language === "en";
+
+    // ================== PATIENT INFO (บนฟอร์มด้านบน) ==================
+    draw(`${patient.firstName} ${patient.lastName}`, 180, 653); // ชื่อ-นามสกุล
+
+    const sexLabel =
+      patient.sex === "male"
+        ? isEn
+          ? "Male"
+          : "ชาย"
+        : patient.sex === "female"
+        ? isEn
+          ? "Female"
+          : "หญิง"
+        : "-";
+    draw(sexLabel, 520, 653); // เพศ
+
+    draw(patient.idCard, 180, 630); // HN / Id_Card
+
+    if (patient.age) {
+      draw(patient.age, 363, 653); // อายุ
+    }
+
+    draw(patient.phone || "-", 444, 612); // เบอร์โทร
+
+    const ethnicityLabel =
+      patient.ethnicity === "thai"
+        ? isEn
+          ? "Thai"
+          : "ไทย"
+        : patient.otherEthnicity || "-";
+    draw(ethnicityLabel, 180, 592); // สัญชาติ
+
+    //draw("EDTA Blood", 470, 690); // สิ่งส่งตรวจ
+
+    // ================== RESULT + PHENO + MARKERS (แยกต่อ gene) ==================
+    const predictedPheno = latest.predict_pheno || "-";
+    const recommendation = latest.recommend || "-";
+
+    const genotypeLabel =
+      (latest.result as any)?.Genotype ??
+      (latest.result as any)?.genotype ??
+      "-";
+
+    const markers = latest.markers || {};
+    const gNorm = geneName.toUpperCase().trim();
+
+    // helper เล็ก ๆ ไว้ wrap ข้อความยาว
+    const drawWrapped = (
+      text: string,
+      startX: number,
+      startY: number,
+      maxLineChars = 70,
+      lineHeight = 14
+    ) => {
+      let y = startY;
+      for (let i = 0; i < text.length; i += maxLineChars) {
+        const line = text.slice(i, i + maxLineChars);
+        draw(line, startX, y);
+        y -= lineHeight;
+      }
+      return y;
+    };
+
+    if (gNorm.includes("TPMT")) {
+      // ===================== TPMT.pdf layout =====================
+      // ปรับ x,y ให้ตรงช่องจริงในเทมเพลตของ TPMT
+      //draw("TPMT", 120, 580);               // label TPMT
+      draw(genotypeLabel, 260, 580);        // ช่อง Genotype
+      draw(predictedPheno, 255, 425);       // ช่อง Phenotype
+
+      const m3c = markers["TPMT*3C (719A>G)"] || "-";
+      draw(m3c, 255, 445);                  // ช่อง allele TPMT*3C
+
+      let yRec = 480;
+    //yRec = drawWrapped(recommendation,120,yRec,70,14);
+
+    } else if (gNorm.includes("CYP2C9")) {
+      // ===================== CYP2C9.pdf layout =====================
+      //draw("CYP2C9", 120, 580);
+      draw(genotypeLabel, 260, 580);
+      draw(predictedPheno, 220, 430);
+
+      const m2 = markers["CYP2C9*2 (430C>T)"] || "-";
+      const m3 = markers["CYP2C9*3 (1075A>C)"] || "-";
+
+      draw(m2, 220, 490); // ช่อง *2
+      draw(m3, 220, 470); // ช่อง *3
+
+      let yRec = 413;
+      yRec = drawWrapped(recommendation, 220, yRec, 80, 14);
+
+    } else if (gNorm.includes("CYP2C19")) {
+      // ===================== CYP2C19.pdf layout =====================
+      //draw("CYP2C19", 120, 580);
+      //draw(genotypeLabel, 230, 435);
+      draw(predictedPheno, 230, 415);
+
+      const m2 = markers["CYP2C19*2 (681G>A)"] || "-";
+      const m3 = markers["CYP2C19*3 (636G>A)"] || "-";
+      const m17 = markers["CYP2C19*17 (-806C>T)"] || "-";
+
+      draw(m2, 230, 495);   // ช่อง *2
+      draw(m3, 230, 475);   // ช่อง *3
+      draw(m17, 230, 455);  // ช่อง *17
+
+      let yRec = 395;
+      yRec = drawWrapped(recommendation, 230, yRec, 90, 8);
+      yRec -= 70;
+
+    } else if (gNorm.includes("CYP2D6")) {
+      // ===================== CYP2D6.pdf layout =====================
+      //draw("CYP2D6", 120, 580);
+      draw(genotypeLabel, 260, 375);
+      draw(predictedPheno, 260, 335);
+
+      const m4   = markers["CYP2D6*4 (1847G>A)"] || "-";
+      const m10  = markers["CYP2D6*10 (100C>T)"] || "-";
+      const m41  = markers["CYP2D6*41 (2989G>A)"] || "-";
+      const cnv2 = markers["CNV intron 2"] || "-";
+      const cnv9 = markers["CNV exon 9"] || "-";
+
+      // ปรับ x,y ให้ตรงช่องใน CYP2D6.pdf ของคุณ
+      draw(m4,   260, 435);
+      draw(m10,  260, 415);
+      draw(m41,  260, 395);
+      //draw(cnv2, 260, 435);
+      //draw(cnv9, 260, 415);
+
+      let yRec = 400;
+      //yRec = drawWrapped(recommendation, 230, yRec, 90, 8);
+
+    } else if (gNorm.includes("CYP3A5")) {
+      // ===================== CYP3A5.pdf layout =====================
+      draw("CYP3A5", 120, 580);
+      //draw(genotypeLabel, 260, 580);
+      //draw(predictedPheno, 120, 560);
+
+      const m3 = markers["CYP3A5*3 (6986A>G)"] || "-";
+      draw(m3, 260, 490); // ช่อง allele CYP3A5*3
+
+      let yRec = 350;
+      yRec = drawWrapped(recommendation, 250, yRec, 70, 14);
+
+    } else if (gNorm.includes("VKORC1")) {
+      // ===================== VKORC1.pdf layout =====================
+      draw("VKORC1", 120, 580);
+      draw(genotypeLabel, 260, 580);
+      draw(predictedPheno, 120, 560);
+
+      const m1173 = markers["VKORC1 (1173C>T)"] || "-";
+      const m1639 = markers["VKORC1 (-1639G>A)"] || "-";
+
+      draw(m1173, 260, 520); // ช่อง 1173C>T
+      draw(m1639, 260, 500); // ช่อง -1639G>A
+
+      let yRec = 460;
+      yRec = drawWrapped(recommendation, 120, yRec, 70, 14);
+
+    } else if (gNorm.includes("HLA") || gNorm.includes("HLA-B")) {
+      // ===================== HLA_B_1502.pdf layout =====================
+      draw("HLA-B*15:02", 120, 580);
+      draw(genotypeLabel, 260, 580);
+      draw(predictedPheno, 120, 560);
+
+      const status = markers["HLA-B*15:02 status"] || "-";
+      draw(status, 260, 520); // ช่องสถานะ carrier / negative
+
+      let yRec = 480;
+      yRec = drawWrapped(recommendation, 120, yRec, 70, 14);
+
+    } else {
+      // ===================== Fallback generic layout =====================
+      let y = 610;
+      draw(`Gene: ${geneName || "-"}`, 90, y);
+      y -= 18;
+
+      draw(`Genotype: ${genotypeLabel}`, 90, y);
+      y -= 18;
+
+      draw(`Predicted Phenotype: ${predictedPheno}`, 90, y);
+      y -= 18;
+
+      draw(
+        isEn ? "Therapeutic recommendation:" : "คำแนะนำการใช้ยา:",
+        90,
+        y
+      );
+      y -= 16;
+
+      y = drawWrapped(recommendation, 100, y, 70, 14);
+
+      const entries = Object.entries(markers);
+      if (entries.length > 0) {
+        y -= 10;
+        draw(isEn ? "Markers:" : "ตัวชี้วัด (Markers):", 90, y);
+        y -= 16;
+
+        for (const [markerName, value] of entries) {
+          if (y < 120) break;
+          draw(`• ${markerName}: ${value || "-"}`, 95, y);
+          y -= 14;
+        }
+      }
+    }
+
+    // ================== SIGNATURE / FOOTER ==================
+    // ถ้าใน template มีลายเซ็นอยู่แล้วจะคอมเมนต์ 3 บรรทัดนี้ทิ้งก็ได้
+    draw("_______________________", 90, 200);
+    draw("_______________________", 330, 200);
+    draw("ศ.ดร.ภก.ชลภัทร สุขเกษม", 90, 185);
+    draw("ทนพญ.นนทกร สกุลวิทยาสุข", 330, 185);
+
+    // 4) สร้าง Blob และเปิดแท็บใหม่
+    const bytes = await pdfDoc.save();
+    const arrayBuffer = u8ToArrayBuffer(bytes);
+    const blob = new Blob([arrayBuffer], { type: "application/pdf" });
+    const urlPdf = URL.createObjectURL(blob);
+
+    window.open(urlPdf, "_blank");
+    setTimeout(() => URL.revokeObjectURL(urlPdf), 60_000);
+  } catch (err: any) {
+    console.error(err);
+    alert(
+      language === "en"
+        ? `Error generating PDF: ${err?.message || err}`
+        : `เกิดข้อผิดพลาดขณะสร้าง PDF: ${err?.message || err}`
+    );
+  }
+}
+
+// ==================== เพจหลัก ====================
 export default function CaseListPage() {
   const { language } = useLanguage();
   const [patients, setPatients] = useState<PatientRow[]>([]);
@@ -77,7 +419,6 @@ export default function CaseListPage() {
     })();
   }, []);
 
-  // แยก 2 ตาราง
   const pendingRows = patients.filter(
     (p) => p.status === "pending_gene" || p.status === "pending_approve"
   );
@@ -283,12 +624,20 @@ export default function CaseListPage() {
                   </td>
 
                   <td className={styles.rowActions}>
-                    <Link
-                      href={`/case/${p.idCard}`}
+                    {/* 👁 ปุ่มตา: เปิด PDF ตามยีน + เขียนผลลง */}
+                    <button
+                      type="button"
                       className={styles.viewBtn}
+                      onClick={() => openFilledPdf(p, language)}
+                      title={
+                        language === "en"
+                          ? "Open PDF report"
+                          : "เปิดรายงาน PDF"
+                      }
                     >
                       <Eye size={16} />
-                    </Link>
+                    </button>
+
                     <button
                       onClick={() => handleDelete(p.idCard, p.recordId)}
                       className={styles.deleteBtn}
